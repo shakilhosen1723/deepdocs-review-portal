@@ -421,8 +421,7 @@ function formatDeadlineDisplay(dateString) {
 
 function saveProjectsToStorage(updatedProjects) {
   try {
-    localStorage.setItem('deepdox_projects_v9', JSON.stringify(updatedProjects));
-    localStorage.setItem('deepdox_projects_v8', JSON.stringify(updatedProjects));
+    localStorage.setItem('deepdox_projects_v7', JSON.stringify(updatedProjects));
   } catch (err) {
     console.warn('Projects storage write failed:', err);
   }
@@ -532,10 +531,9 @@ export default function App() {
     return 'landing';
   });
 
-  const [role, setRole] = useState(() => {
-    if (isStrictClientBookmark) return 'client';
-    return localStorage.getItem('deepdox_role_v5') || 'editor';
-  });
+  const [role, setRole] = useState(() =>
+    isStrictClientBookmark ? 'client' : localStorage.getItem('deepdox_role_v7') || 'editor'
+  );
 
   const [themeMode, setThemeMode] = useState(() => {
     return localStorage.getItem('deepdox_theme_mode') || 'light';
@@ -552,82 +550,37 @@ export default function App() {
 
   const [settings, setSettings] = useState(() => {
     try {
-      const saved = localStorage.getItem('deepdox_settings_v5');
+      const saved =
+        localStorage.getItem('deepdox_settings_v7') ||
+        localStorage.getItem('deepdox_settings_v5');
       return saved ? { ...DEFAULT_SETTINGS, ...JSON.parse(saved) } : DEFAULT_SETTINGS;
     } catch {
       return DEFAULT_SETTINGS;
     }
   });
 
+  // ROBUST PROJECT INITIALIZATION & PERSISTENCE
   const [projects, setProjects] = useState(() => {
     try {
-      const savedV9 = localStorage.getItem('deepdox_projects_v9');
-      const savedV8 = localStorage.getItem('deepdox_projects_v8');
-      const saved = savedV9 || savedV8;
-      let loaded = INITIAL_PROJECTS.map(normalizeProject);
+      const saved =
+        localStorage.getItem('deepdox_projects_v7') ||
+        localStorage.getItem('deepdox_projects_v9') ||
+        localStorage.getItem('deepdox_projects_v8');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          loaded = parsed.map(normalizeProject);
-        }
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
-
-      // URL PARAMETER HYDRATION:
-      // If a video link is passed in the URL (?video=... or ?vurl=...), immediately attach and lock it into the project!
-      // This guarantees that any client opening a shared link on WhatsApp, email or phone ALWAYS receives the exact video.
-      const p = new URLSearchParams(window.location.search);
-      const urlVideo = p.get('video') || p.get('vurl');
-      const urlProjId = p.get('project');
-      const urlType =
-        p.get('type') ||
-        (urlVideo?.includes('drive.google.com')
-          ? 'gdrive'
-          : urlVideo?.includes('youtube') || urlVideo?.includes('youtu.be')
-          ? 'youtube'
-          : 'r2');
-      const urlTitle = p.get('title');
-
-      if (urlVideo && urlVideo.trim() && !urlVideo.includes('asldkfasdfsl.mp4')) {
-        const cleanUrl = urlVideo.trim();
-        const targetProjId =
-          urlProjId && loaded.some((pr) => pr.id === urlProjId) ? urlProjId : loaded[0].id;
-        loaded = loaded.map((proj) => {
-          if (proj.id !== targetProjId) return proj;
-          const activeVerId = proj.active_version_id || proj.versions?.[0]?.id;
-          const updatedVers = (proj.versions || []).map((v) => {
-            if (v.id === activeVerId) {
-              return {
-                ...v,
-                source_type: urlType,
-                r2Url: urlType === 'r2' ? cleanUrl : v.r2Url,
-                driveUrl: urlType === 'gdrive' ? cleanUrl : v.driveUrl,
-                youtubeUrl: urlType === 'youtube' ? cleanUrl : v.youtubeUrl
-              };
-            }
-            return v;
-          });
-          return {
-            ...proj,
-            title: urlTitle ? decodeURIComponent(urlTitle) : proj.title,
-            source_type: urlType,
-            r2Url: urlType === 'r2' ? cleanUrl : proj.r2Url,
-            driveUrl: urlType === 'gdrive' ? cleanUrl : proj.driveUrl,
-            youtubeUrl: urlType === 'youtube' ? cleanUrl : proj.youtubeUrl,
-            video_url: cleanUrl,
-            versions: updatedVers
-          };
-        });
-      }
-
-      return loaded;
+      return INITIAL_PROJECTS;
     } catch {
-      return INITIAL_PROJECTS.map(normalizeProject);
+      return INITIAL_PROJECTS;
     }
   });
 
   const [markers, setMarkers] = useState(() => {
     try {
-      const saved = localStorage.getItem('deepdox_markers_v8');
+      const saved =
+        localStorage.getItem('deepdox_markers_v7') ||
+        localStorage.getItem('deepdox_markers_v8');
       return saved ? JSON.parse(saved) : INITIAL_MARKERS;
     } catch {
       return INITIAL_MARKERS;
@@ -636,11 +589,22 @@ export default function App() {
 
   const [reviewActiveTab, setReviewActiveTab] = useState('review');
 
+  // URL PARAMETER SYNCHRONIZATION FOR CLIENT REVIEW LINKS
   const [activeProjectId, setActiveProjectId] = useState(() => {
-    const paramProj = urlParams.get('project');
-    if (paramProj && projects.some((p) => p.id === paramProj)) return paramProj;
+    const urlProj = urlParams.get('project');
+    if (urlProj && projects.some((p) => p.id === urlProj)) {
+      return urlProj;
+    }
     return projects[0]?.id || INITIAL_PROJECTS[0].id;
   });
+
+  // Keep activeProjectId synchronized if URL query parameter ?project=... changes
+  useEffect(() => {
+    const urlProj = urlParams.get('project');
+    if (urlProj && projects.some((p) => p.id === urlProj) && activeProjectId !== urlProj) {
+      setActiveProjectId(urlProj);
+    }
+  }, [urlParams, projects, activeProjectId]);
 
   // Active Project & Active Version Resolution
   const activeProject = useMemo(() => {
@@ -831,39 +795,19 @@ export default function App() {
     document.title = `${studioTitle}${projTitle}`;
   }, [settings.studioLogo, settings.studioName, activeProject?.title]);
 
-  // Persistence to LocalStorage
+  // AUTO-SAVE TO LOCALSTORAGE ON EVERY STATE CHANGE
   useEffect(() => {
     try {
-      localStorage.setItem('deepdox_projects_v9', JSON.stringify(projects));
-      localStorage.setItem('deepdox_projects_v8', JSON.stringify(projects));
-    } catch (e) {
-      console.error('Projects storage error:', e);
-    }
-    try {
-      localStorage.setItem('deepdox_markers_v9', JSON.stringify(markers));
-      localStorage.setItem('deepdox_markers_v8', JSON.stringify(markers));
-    } catch (e) {
-      console.warn('Markers storage error (quota or size):', e);
-      try {
-        const lightMarkers = markers.map((m) => ({
-          ...m,
-          drawing_data: m.drawing_data && m.drawing_data.length > 50000 ? null : m.drawing_data,
-          attachment_url: m.attachment_url && m.attachment_url.length > 100000 ? null : m.attachment_url
-        }));
-        localStorage.setItem('deepdox_markers_v9', JSON.stringify(lightMarkers));
-        localStorage.setItem('deepdox_markers_v8', JSON.stringify(lightMarkers));
-      } catch (e2) {}
-    }
-    try {
-      localStorage.setItem('deepdox_settings_v5', JSON.stringify(settings));
-      localStorage.setItem('deepdox_theme_mode', themeMode);
+      localStorage.setItem('deepdox_projects_v7', JSON.stringify(projects));
+      localStorage.setItem('deepdox_markers_v7', JSON.stringify(markers));
+      localStorage.setItem('deepdox_settings_v7', JSON.stringify(settings));
       if (!isStrictClientBookmark) {
-        localStorage.setItem('deepdox_role_v5', role);
+        localStorage.setItem('deepdox_role_v7', role);
       }
     } catch (e) {
-      console.error('Settings storage error:', e);
+      console.error('Failed to save state to localStorage:', e);
     }
-  }, [projects, markers, settings, role, themeMode, isStrictClientBookmark]);
+  }, [projects, markers, settings, role, isStrictClientBookmark]);
 
   // PROJECT STATS & MARKER FILTERING
   const getProjectStats = useCallback(
