@@ -28,6 +28,7 @@ import {
   Volume1,
   Volume2,
   VolumeX,
+  Link2,
   Maximize,
   Edit3,
   ChevronDown,
@@ -418,6 +419,15 @@ function formatDeadlineDisplay(dateString) {
   });
 }
 
+function saveProjectsToStorage(updatedProjects) {
+  try {
+    localStorage.setItem('deepdox_projects_v9', JSON.stringify(updatedProjects));
+    localStorage.setItem('deepdox_projects_v8', JSON.stringify(updatedProjects));
+  } catch (err) {
+    console.warn('Projects storage write failed:', err);
+  }
+}
+
 function normalizeProject(p, idx = 0) {
   const versions = (
     p.versions && Array.isArray(p.versions) && p.versions.length > 0
@@ -425,7 +435,7 @@ function normalizeProject(p, idx = 0) {
       : [
           {
             id: `ver_${p.id}_1`,
-            version_label: 'Version 1',
+            version_label: p.version_label || 'Version 1',
             source_type: p.source_type || 'r2',
             r2Url: p.r2Url || p.video_url || DEMO_FALLBACK_MP4,
             driveUrl: p.driveUrl || '',
@@ -434,16 +444,22 @@ function normalizeProject(p, idx = 0) {
           }
         ]
   ).map((v, vIdx) => {
-    // Convert legacy "Cut v..." or empty label to sequential "Version X"
-    const isLegacyCut = !v.version_label || /^cut\s*v?\d/i.test(v.version_label);
-    const versionLabel = isLegacyCut ? `Version ${vIdx + 1}` : v.version_label;
+    // Preserve custom version labels like "Video v1.4", "Version 1.1.4", etc.
+    const versionLabel =
+      v.version_label && v.version_label.trim() !== ''
+        ? v.version_label.trim()
+        : `Version ${vIdx + 1}`;
+
+    // Preserve the user-provided video URL without reverting to demo
+    const r2Url =
+      v.r2Url && v.r2Url.trim() !== '' && !v.r2Url.includes('asldkfasdfsl.mp4')
+        ? v.r2Url.trim()
+        : (p.r2Url && !p.r2Url.includes('asldkfasdfsl.mp4') ? p.r2Url : DEMO_FALLBACK_MP4);
+
     return {
       ...v,
       version_label: versionLabel,
-      r2Url:
-        v.r2Url && !v.r2Url.includes('asldkfasdfsl.mp4')
-          ? v.r2Url
-          : DEMO_FALLBACK_MP4
+      r2Url
     };
   });
 
@@ -452,13 +468,18 @@ function normalizeProject(p, idx = 0) {
       ? p.active_version_id
       : versions[versions.length - 1]?.id || versions[0]?.id;
 
-  const cleanR2 =
-    p.r2Url && !p.r2Url.includes('asldkfasdfsl.mp4')
-      ? p.r2Url
-      : DEMO_FALLBACK_MP4;
-
-  const activeVer = versions.find((v) => v.id === active_version_id);
+  const activeVer = versions.find((v) => v.id === active_version_id) || versions[0];
   const activeVerLabel = activeVer?.version_label || `Version ${versions.length}`;
+  const activeSourceType = activeVer?.source_type || p.source_type || 'r2';
+  const activeR2 = (activeVer?.r2Url || p.r2Url || DEMO_FALLBACK_MP4).trim();
+  const activeDrive = activeVer?.driveUrl || p.driveUrl || '';
+  const activeYoutube = activeVer?.youtubeUrl || p.youtubeUrl || '';
+  const activeVideoUrl =
+    activeSourceType === 'youtube'
+      ? activeYoutube
+      : activeSourceType === 'gdrive'
+      ? activeDrive
+      : activeR2;
 
   const cleanTabLabel =
     !p.tab_label || /^project\s*\d+/i.test(p.tab_label)
@@ -470,8 +491,11 @@ function normalizeProject(p, idx = 0) {
     tab_label: cleanTabLabel,
     versions,
     active_version_id,
-    r2Url: cleanR2,
-    video_url: p.video_url && !p.video_url.includes('asldkfasdfsl.mp4') ? p.video_url : cleanR2,
+    source_type: activeSourceType,
+    r2Url: activeR2,
+    driveUrl: activeDrive,
+    youtubeUrl: activeYoutube,
+    video_url: activeVideoUrl,
     version_label: activeVerLabel
   };
 }
@@ -537,7 +561,9 @@ export default function App() {
 
   const [projects, setProjects] = useState(() => {
     try {
-      const saved = localStorage.getItem('deepdox_projects_v8');
+      const savedV9 = localStorage.getItem('deepdox_projects_v9');
+      const savedV8 = localStorage.getItem('deepdox_projects_v8');
+      const saved = savedV9 || savedV8;
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
@@ -759,15 +785,34 @@ export default function App() {
   // Persistence to LocalStorage
   useEffect(() => {
     try {
+      localStorage.setItem('deepdox_projects_v9', JSON.stringify(projects));
       localStorage.setItem('deepdox_projects_v8', JSON.stringify(projects));
+    } catch (e) {
+      console.error('Projects storage error:', e);
+    }
+    try {
+      localStorage.setItem('deepdox_markers_v9', JSON.stringify(markers));
       localStorage.setItem('deepdox_markers_v8', JSON.stringify(markers));
+    } catch (e) {
+      console.warn('Markers storage error (quota or size):', e);
+      try {
+        const lightMarkers = markers.map((m) => ({
+          ...m,
+          drawing_data: m.drawing_data && m.drawing_data.length > 50000 ? null : m.drawing_data,
+          attachment_url: m.attachment_url && m.attachment_url.length > 100000 ? null : m.attachment_url
+        }));
+        localStorage.setItem('deepdox_markers_v9', JSON.stringify(lightMarkers));
+        localStorage.setItem('deepdox_markers_v8', JSON.stringify(lightMarkers));
+      } catch (e2) {}
+    }
+    try {
       localStorage.setItem('deepdox_settings_v5', JSON.stringify(settings));
       localStorage.setItem('deepdox_theme_mode', themeMode);
       if (!isStrictClientBookmark) {
         localStorage.setItem('deepdox_role_v5', role);
       }
     } catch (e) {
-      console.error('Storage error:', e);
+      console.error('Settings storage error:', e);
     }
   }, [projects, markers, settings, role, themeMode, isStrictClientBookmark]);
 
@@ -925,36 +970,40 @@ export default function App() {
   // POINT 1: INLINE PROJECT EDITING ACTIONS
   const handleSaveInlineTitle = () => {
     if (!titleDraft.trim()) return;
-    setProjects((prev) =>
-      prev.map((p) => (p.id === activeProject.id ? { ...p, title: titleDraft.trim() } : p))
+    const updated = projects.map((p) =>
+      p.id === activeProject.id ? { ...p, title: titleDraft.trim() } : p
     );
+    setProjects(updated);
+    saveProjectsToStorage(updated);
     setEditingTitle(false);
     showToast(`Updated project title to "${titleDraft.trim()}"`);
   };
 
   const handleSaveInlineVersion = () => {
     if (!versionDraft.trim()) return;
-    setProjects((prev) =>
-      prev.map((p) => {
-        if (p.id !== activeProject?.id) return p;
-        const updatedVersions = (p.versions || []).map((v) =>
-          v.id === p.active_version_id ? { ...v, version_label: versionDraft.trim() } : v
-        );
-        return {
-          ...p,
-          version_label: versionDraft.trim(),
-          versions: updatedVersions
-        };
-      })
-    );
+    const updated = projects.map((p) => {
+      if (p.id !== activeProject?.id) return p;
+      const updatedVersions = (p.versions || []).map((v) =>
+        v.id === p.active_version_id ? { ...v, version_label: versionDraft.trim() } : v
+      );
+      return {
+        ...p,
+        version_label: versionDraft.trim(),
+        versions: updatedVersions
+      };
+    });
+    setProjects(updated);
+    saveProjectsToStorage(updated);
     setEditingVersion(false);
     showToast(`Updated active video label to "${versionDraft.trim()}"`);
   };
 
   const handleUpdateDeadline = (newDate) => {
-    setProjects((prev) =>
-      prev.map((p) => (p.id === activeProject.id ? { ...p, deadline: newDate } : p))
+    const updated = projects.map((p) =>
+      p.id === activeProject.id ? { ...p, deadline: newDate } : p
     );
+    setProjects(updated);
+    saveProjectsToStorage(updated);
     setEditingDeadline(false);
     showToast(`Deadline updated to ${formatDeadlineDisplay(newDate)}`);
   };
@@ -963,17 +1012,29 @@ export default function App() {
   const handleSwitchActiveVersion = (verId) => {
     const targetVer = activeProject?.versions?.find((v) => v.id === verId);
     if (!targetVer) return;
-    setProjects((prev) =>
-      prev.map((p) =>
-        p.id === activeProject.id
-          ? {
-              ...p,
-              active_version_id: verId,
-              version_label: targetVer.version_label
-            }
-          : p
-      )
+    const targetUrl =
+      targetVer.source_type === 'youtube'
+        ? targetVer.youtubeUrl
+        : targetVer.source_type === 'gdrive'
+        ? targetVer.driveUrl
+        : targetVer.r2Url || DEMO_FALLBACK_MP4;
+
+    const updated = projects.map((p) =>
+      p.id === activeProject.id
+        ? {
+            ...p,
+            active_version_id: verId,
+            version_label: targetVer.version_label,
+            source_type: targetVer.source_type || 'r2',
+            r2Url: targetVer.r2Url || p.r2Url,
+            driveUrl: targetVer.driveUrl || p.driveUrl,
+            youtubeUrl: targetVer.youtubeUrl || p.youtubeUrl,
+            video_url: targetUrl
+          }
+        : p
     );
+    setProjects(updated);
+    saveProjectsToStorage(updated);
     setSelectedVersionFilter(verId);
     setCurrentTime(0);
     setIsPlaying(false);
@@ -983,39 +1044,50 @@ export default function App() {
 
   const handleSwitchSourceView = (sourceMode) => {
     if (!activeProject) return;
-    setProjects((prev) =>
-      prev.map((p) => {
-        if (p.id !== activeProject.id) return p;
-        const currentVerId = activeVersion?.id || p.active_version_id;
-        const updatedVersions = (p.versions || []).map((v) => {
-          if (v.id !== currentVerId) return v;
-          let r2Url = v.r2Url;
-          let driveUrl = v.driveUrl;
-          let youtubeUrl = v.youtubeUrl;
-          if (sourceMode === 'r2' && !r2Url) {
-            r2Url = p.r2Url || DEMO_FALLBACK_MP4;
-          }
-          if (sourceMode === 'gdrive' && !driveUrl) {
-            driveUrl = p.driveUrl || 'https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view';
-          }
-          if (sourceMode === 'youtube' && !youtubeUrl) {
-            youtubeUrl = p.youtubeUrl || 'https://www.youtube.com/watch?v=aqz-KE-bpKQ';
-          }
-          return {
-            ...v,
-            source_type: sourceMode,
-            r2Url,
-            driveUrl,
-            youtubeUrl
-          };
-        });
+    const currentVerId = activeVersion?.id || activeProject.active_version_id;
+    const updated = projects.map((p) => {
+      if (p.id !== activeProject.id) return p;
+      const updatedVersions = (p.versions || []).map((v) => {
+        if (v.id !== currentVerId) return v;
+        let r2Url = v.r2Url;
+        let driveUrl = v.driveUrl;
+        let youtubeUrl = v.youtubeUrl;
+        if (sourceMode === 'r2' && !r2Url) {
+          r2Url = p.r2Url || DEMO_FALLBACK_MP4;
+        }
+        if (sourceMode === 'gdrive' && !driveUrl) {
+          driveUrl = p.driveUrl || 'https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view';
+        }
+        if (sourceMode === 'youtube' && !youtubeUrl) {
+          youtubeUrl = p.youtubeUrl || 'https://www.youtube.com/watch?v=aqz-KE-bpKQ';
+        }
         return {
-          ...p,
+          ...v,
           source_type: sourceMode,
-          versions: updatedVersions
+          r2Url,
+          driveUrl,
+          youtubeUrl
         };
-      })
-    );
+      });
+
+      const activeVerItem = updatedVersions.find((v) => v.id === currentVerId);
+      const chosenUrl =
+        sourceMode === 'youtube'
+          ? activeVerItem?.youtubeUrl
+          : sourceMode === 'gdrive'
+          ? activeVerItem?.driveUrl
+          : activeVerItem?.r2Url;
+
+      return {
+        ...p,
+        source_type: sourceMode,
+        video_url: chosenUrl || p.video_url,
+        versions: updatedVersions
+      };
+    });
+
+    setProjects(updated);
+    saveProjectsToStorage(updated);
     const modeNames = {
       r2: 'Cloudflare View (Direct MP4 Stream)',
       gdrive: 'Drive View (Google Preview)',
@@ -1028,32 +1100,48 @@ export default function App() {
     e.preventDefault();
     const nextVerIndex = (activeProject?.versions?.length || 0) + 1;
     const resolvedLabel = newVideoName.trim() || `Version ${nextVerIndex}`;
+    const cleanUrl = newVideoUrl.trim();
     const createdVer = {
       id: `ver_${Date.now()}`,
       version_label: resolvedLabel,
       source_type: newVideoSourceType,
-      r2Url: newVideoSourceType === 'r2' ? newVideoUrl.trim() || DEMO_FALLBACK_MP4 : '',
-      driveUrl: newVideoSourceType === 'gdrive' ? newVideoUrl.trim() : '',
-      youtubeUrl: newVideoSourceType === 'youtube' ? newVideoUrl.trim() : '',
+      r2Url: newVideoSourceType === 'r2' ? cleanUrl || DEMO_FALLBACK_MP4 : '',
+      driveUrl: newVideoSourceType === 'gdrive' ? cleanUrl : '',
+      youtubeUrl: newVideoSourceType === 'youtube' ? cleanUrl : '',
       created_at: new Date().toISOString()
     };
 
-    setProjects((prev) =>
-      prev.map((p) =>
-        p.id === activeProject.id
-          ? {
-              ...p,
-              versions: [...(p.versions || []), createdVer],
-              active_version_id: createdVer.id,
-              version_label: createdVer.version_label
-            }
-          : p
-      )
+    const chosenUrl =
+      newVideoSourceType === 'youtube'
+        ? createdVer.youtubeUrl
+        : newVideoSourceType === 'gdrive'
+        ? createdVer.driveUrl
+        : createdVer.r2Url;
+
+    const updated = projects.map((p) =>
+      p.id === activeProject.id
+        ? {
+            ...p,
+            versions: [...(p.versions || []), createdVer],
+            active_version_id: createdVer.id,
+            version_label: createdVer.version_label,
+            source_type: createdVer.source_type,
+            r2Url: createdVer.r2Url || p.r2Url,
+            driveUrl: createdVer.driveUrl || p.driveUrl,
+            youtubeUrl: createdVer.youtubeUrl || p.youtubeUrl,
+            video_url: chosenUrl || p.video_url
+          }
+        : p
     );
+
+    setProjects(updated);
+    saveProjectsToStorage(updated);
     setNewVideoName('');
     setNewVideoUrl('');
     setShowUploadSourceModal(false);
     setSelectedVersionFilter(createdVer.id);
+    setVideoError(false);
+    setCurrentTime(0);
     showToast(`Added new video: ${createdVer.version_label}`);
   };
 
@@ -1062,24 +1150,85 @@ export default function App() {
       showToast('Cannot delete the only video in this project.', 'error');
       return;
     }
+    const versionToDelete = activeProject.versions.find((v) => v.id === verId);
     const remaining = activeProject.versions.filter((v) => v.id !== verId);
     const newActiveId =
       activeProject.active_version_id === verId ? remaining[0].id : activeProject.active_version_id;
     const targetVer = remaining.find((v) => v.id === newActiveId);
+    const targetUrl =
+      targetVer?.source_type === 'youtube'
+        ? targetVer?.youtubeUrl
+        : targetVer?.source_type === 'gdrive'
+        ? targetVer?.driveUrl
+        : targetVer?.r2Url || DEMO_FALLBACK_MP4;
 
-    setProjects((prev) =>
-      prev.map((p) =>
-        p.id === activeProject.id
-          ? {
-              ...p,
-              versions: remaining,
-              active_version_id: newActiveId,
-              version_label: targetVer?.version_label || p.version_label
-            }
-          : p
-      )
+    const updated = projects.map((p) =>
+      p.id === activeProject.id
+        ? {
+            ...p,
+            versions: remaining,
+            active_version_id: newActiveId,
+            version_label: targetVer?.version_label || p.version_label,
+            source_type: targetVer?.source_type || 'r2',
+            r2Url: targetVer?.r2Url || p.r2Url,
+            driveUrl: targetVer?.driveUrl || p.driveUrl,
+            youtubeUrl: targetVer?.youtubeUrl || p.youtubeUrl,
+            video_url: targetUrl
+          }
+        : p
     );
-    showToast('Video deleted successfully.');
+
+    setProjects(updated);
+    saveProjectsToStorage(updated);
+
+    // Clean up markers specific to the deleted version
+    setMarkers((prev) => prev.filter((m) => m.version_id !== verId));
+
+    if (selectedVersionFilter === verId) {
+      setSelectedVersionFilter('all');
+    }
+
+    showToast(`Deleted video "${versionToDelete?.version_label || 'version'}"`);
+  };
+
+  const handleQuickSaveVideoLink = (url, sourceType = 'r2') => {
+    const cleanUrl = url.trim();
+    if (!cleanUrl) return;
+
+    const targetVerId = activeVersion?.id || activeProject?.active_version_id || activeProject?.versions?.[0]?.id;
+
+    const updated = projects.map((p) => {
+      if (p.id !== activeProject?.id) return p;
+      const updatedVersions = (p.versions || []).map((v) => {
+        if (v.id === targetVerId) {
+          return {
+            ...v,
+            source_type: sourceType,
+            r2Url: sourceType === 'r2' ? cleanUrl : v.r2Url,
+            driveUrl: sourceType === 'gdrive' ? cleanUrl : v.driveUrl,
+            youtubeUrl: sourceType === 'youtube' ? cleanUrl : v.youtubeUrl
+          };
+        }
+        return v;
+      });
+
+      return {
+        ...p,
+        source_type: sourceType,
+        r2Url: sourceType === 'r2' ? cleanUrl : p.r2Url,
+        driveUrl: sourceType === 'gdrive' ? cleanUrl : p.driveUrl,
+        youtubeUrl: sourceType === 'youtube' ? cleanUrl : p.youtubeUrl,
+        video_url: cleanUrl,
+        active_version_id: targetVerId,
+        versions: updatedVersions
+      };
+    });
+
+    setProjects(updated);
+    saveProjectsToStorage(updated);
+    setVideoError(false);
+    setCurrentTime(0);
+    showToast(`Video URL saved and locked to ${activeVersion?.version_label || 'active video'}!`);
   };
 
   // POINT 12: 1-SECOND SKIP PRECISION
@@ -1529,48 +1678,54 @@ export default function App() {
       'https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view';
     const cleanYoutube = sourceUpdateForm.youtubeUrl.trim() || activeVersion?.youtubeUrl || '';
 
-    setProjects((prev) =>
-      prev.map((p) => {
-        if (p.id !== activeProject?.id) return p;
-        const updatedVersions = (p.versions || []).map((v) => {
-          if (v.id === p.active_version_id) {
-            return {
-              ...v,
-              source_type: sourceUpdateForm.source_type,
-              r2Url: cleanR2,
-              driveUrl: cleanDrive,
-              youtubeUrl: cleanYoutube,
-              version_label: sourceUpdateForm.version_label.trim() || v.version_label
-            };
-          }
-          return v;
-        });
+    const targetVerId = activeVersion?.id || activeProject?.active_version_id || activeProject?.versions?.[0]?.id;
 
-        return {
-          ...p,
-          title: sourceUpdateForm.title.trim() || p.title,
-          client_name: sourceUpdateForm.client_name.trim() || p.client_name,
-          status_label: sourceUpdateForm.status_label.trim() || p.status_label,
-          source_type: sourceUpdateForm.source_type,
-          r2Url: cleanR2,
-          driveUrl: cleanDrive,
-          youtubeUrl: cleanYoutube,
-          video_url:
-            sourceUpdateForm.source_type === 'youtube'
-              ? cleanYoutube
-              : sourceUpdateForm.source_type === 'gdrive'
-              ? cleanDrive
-              : cleanR2,
-          version_label: sourceUpdateForm.version_label.trim() || p.version_label,
-          client_email: sourceUpdateForm.client_email.trim(),
-          client_whatsapp: sourceUpdateForm.client_whatsapp.trim(),
-          versions: updatedVersions
-        };
-      })
-    );
+    const chosenUrl =
+      sourceUpdateForm.source_type === 'youtube'
+        ? cleanYoutube
+        : sourceUpdateForm.source_type === 'gdrive'
+        ? cleanDrive
+        : cleanR2;
 
+    const updated = projects.map((p) => {
+      if (p.id !== activeProject?.id) return p;
+      const updatedVersions = (p.versions || []).map((v) => {
+        if (v.id === targetVerId) {
+          return {
+            ...v,
+            source_type: sourceUpdateForm.source_type,
+            r2Url: cleanR2,
+            driveUrl: cleanDrive,
+            youtubeUrl: cleanYoutube,
+            version_label: sourceUpdateForm.version_label.trim() || v.version_label
+          };
+        }
+        return v;
+      });
+
+      return {
+        ...p,
+        title: sourceUpdateForm.title.trim() || p.title,
+        client_name: sourceUpdateForm.client_name.trim() || p.client_name,
+        status_label: sourceUpdateForm.status_label.trim() || p.status_label,
+        source_type: sourceUpdateForm.source_type,
+        r2Url: cleanR2,
+        driveUrl: cleanDrive,
+        youtubeUrl: cleanYoutube,
+        video_url: chosenUrl,
+        active_version_id: targetVerId,
+        version_label: sourceUpdateForm.version_label.trim() || p.version_label,
+        client_email: sourceUpdateForm.client_email.trim(),
+        client_whatsapp: sourceUpdateForm.client_whatsapp.trim(),
+        versions: updatedVersions
+      };
+    });
+
+    setProjects(updated);
+    saveProjectsToStorage(updated);
+    setVideoError(false);
     setShowUploadSourceModal(false);
-    showToast('Updated project video source & info!');
+    showToast('Updated and saved project video source & URL!');
   };
 
   // LOCAL VIDEO UPLOAD HANDLERS
@@ -1671,7 +1826,9 @@ export default function App() {
       created_at: new Date().toISOString()
     };
 
-    setProjects((prev) => [...prev, created]);
+    const updated = [...projects, created];
+    setProjects(updated);
+    saveProjectsToStorage(updated);
     setActiveProjectId(created.id);
     setShowNewProjectModal(false);
     showToast(`Created ${created.tab_label}: ${created.title}`);
@@ -1694,12 +1851,15 @@ export default function App() {
       setActiveProjectId(reindexedProjects[0].id);
     }
     setProjects(reindexedProjects);
+    saveProjectsToStorage(reindexedProjects);
     setMarkers((prev) => prev.filter((m) => m.project_id !== targetId));
     showToast('Project deleted successfully.');
   };
 
   const handleResetDemoData = () => {
-    setProjects(INITIAL_PROJECTS.map(normalizeProject));
+    const defaults = INITIAL_PROJECTS.map(normalizeProject);
+    setProjects(defaults);
+    saveProjectsToStorage(defaults);
     setMarkers(INITIAL_MARKERS);
     setSettings(DEFAULT_SETTINGS);
     setActiveProjectId(INITIAL_PROJECTS[0].id);
@@ -2673,31 +2833,55 @@ export default function App() {
                     ).length;
 
                     return (
-                      <button
+                      <div
                         key={ver.id}
-                        type="button"
-                        onClick={() => {
-                          handleSwitchActiveVersion(ver.id);
-                          setSelectedVersionFilter(ver.id);
-                        }}
-                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black transition-all ${
+                        className={`inline-flex items-center rounded-full text-xs font-black transition-all ${
                           isVerActive
                             ? 'bg-[#FF6B00] text-white shadow-md shadow-orange-500/25 ring-2 ring-orange-500/30'
                             : 'bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-white/[0.07] dark:text-slate-300 dark:hover:bg-white/15'
                         }`}
-                        title={`Switch to ${ver.version_label} video and view its messages`}
                       >
-                        <span>{ver.version_label}</span>
-                        <span
-                          className={`text-[10px] font-bold px-1.5 py-0.2 rounded-full ${
-                            isVerActive
-                              ? 'bg-black/20 text-white'
-                              : 'bg-black/5 dark:bg-white/10 text-slate-500 dark:text-slate-400'
-                          }`}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleSwitchActiveVersion(ver.id);
+                            setSelectedVersionFilter(ver.id);
+                          }}
+                          className="inline-flex items-center gap-1.5 pl-3 pr-2 py-1"
+                          title={`Switch to ${ver.version_label} video and view its messages`}
                         >
-                          {verMarkersCount}
-                        </span>
-                      </button>
+                          <span>{ver.version_label}</span>
+                          <span
+                            className={`text-[10px] font-bold px-1.5 py-0.2 rounded-full ${
+                              isVerActive
+                                ? 'bg-black/20 text-white'
+                                : 'bg-black/5 dark:bg-white/10 text-slate-500 dark:text-slate-400'
+                            }`}
+                          >
+                            {verMarkersCount}
+                          </span>
+                        </button>
+
+                        {(activeProject?.versions || []).length > 1 && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (window.confirm(`Delete ${ver.version_label}? This will remove this video cut and its specific feedback notes.`)) {
+                                handleDeleteVersion(ver.id);
+                              }
+                            }}
+                            className={`p-1 mr-1.5 rounded-full transition-colors ${
+                              isVerActive
+                                ? 'hover:bg-black/25 text-white/80 hover:text-white'
+                                : 'hover:bg-slate-300 dark:hover:bg-white/20 text-slate-400 hover:text-rose-500'
+                            }`}
+                            title={`Delete ${ver.version_label}`}
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
                     );
                   })}
 
@@ -2741,6 +2925,29 @@ export default function App() {
                   <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 mr-1">
                     View:
                   </span>
+
+                  {/* Quick Direct Paste Video Link Button */}
+                  {role === 'editor' && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const currentUrl = activeVersion?.r2Url || activeProject?.r2Url || '';
+                        const promptDefault = currentUrl === DEMO_FALLBACK_MP4 ? '' : currentUrl;
+                        const inputUrl = window.prompt(
+                          'Paste your direct Cloudflare R2 (.mp4) or video stream URL:\n(It will stay saved permanently across page refreshes)',
+                          promptDefault
+                        );
+                        if (inputUrl !== null && inputUrl.trim() !== '') {
+                          handleQuickSaveVideoLink(inputUrl.trim(), 'r2');
+                        }
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-orange-500/10 hover:bg-orange-500/20 text-[#ea580c] dark:text-orange-400 border border-orange-500/30 transition-all cursor-pointer shadow-sm"
+                      title="Directly paste or edit Cloudflare video link for this version"
+                    >
+                      <Link2 className="w-3.5 h-3.5 text-[#FF6B00]" />
+                      <span>Paste Video Link</span>
+                    </button>
+                  )}
 
                   {/* Cloudflare View */}
                   <button
@@ -4351,9 +4558,13 @@ export default function App() {
                           {(activeProject?.versions || []).length > 1 && (
                             <button
                               type="button"
-                              onClick={() => handleDeleteVersion(ver.id)}
-                              className="p-1.5 text-slate-400 hover:text-rose-400"
-                              title="Delete this video version"
+                              onClick={() => {
+                                if (window.confirm(`Delete ${ver.version_label}? This will remove this video cut and its specific feedback notes.`)) {
+                                  handleDeleteVersion(ver.id);
+                                }
+                              }}
+                              className="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-white/10 transition-colors"
+                              title={`Delete ${ver.version_label}`}
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
