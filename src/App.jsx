@@ -2211,7 +2211,7 @@ export default function App() {
         </div>
 
         {/* 1. TOP HEADER (DeepDox logo, title, Dark Studio, Role toggle, User avatar) */}
-        <header className="relative z-10 max-w-[1380px] mx-auto px-4 sm:px-8 pt-5 pb-3">
+        <header className="relative z-10 max-w-[1380px] mx-auto px-4 sm:px-8 pt-2 sm:pt-2.5 pb-1 sm:pb-1.5">
           <div className="flex flex-wrap items-center justify-between gap-4">
             {/* Left: DeepDox Brand Logo & Title */}
             <div className="flex items-center gap-3">
@@ -2329,14 +2329,14 @@ export default function App() {
         </header>
 
         {/* 2. ACTION TOOLBAR ROW (PROJECT WORKSPACES ▾, Cloudflare Guide, Export, Bookmark, Upload, Notify, Settings) */}
-        <section className="relative z-10 max-w-[1380px] mx-auto px-4 sm:px-8 mt-2 mb-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
+        <section className="relative z-10 max-w-[1380px] mx-auto px-4 sm:px-8 mt-1 mb-2">
+          <div className="flex flex-wrap items-center justify-between gap-2.5">
             {/* Left: Project Workspaces Dropdown Pill */}
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => setShowNewProjectModal(true)}
-                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#14182b] hover:bg-[#1a2039] border border-white/10 text-xs font-black text-white transition-all shadow-sm group"
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#14182b] hover:bg-[#1a2039] border border-white/10 text-xs font-black text-white transition-all shadow-sm group"
                 title="Manage Project Workspaces"
               >
                 <div className="w-3.5 h-3.5 grid grid-cols-2 gap-0.5">
@@ -2356,7 +2356,7 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => setShowCloudflareGuideModal(true)}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#14182b] hover:bg-[#1a2039] border border-white/10 text-xs font-bold text-slate-200 hover:text-white transition-all"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#14182b] hover:bg-[#1a2039] border border-white/10 text-xs font-bold text-slate-200 hover:text-white transition-all"
                   title="Cloudflare R2 Direct Streaming Setup"
                 >
                   <Cloud className="w-3.5 h-3.5 text-slate-400" />
@@ -2372,7 +2372,7 @@ export default function App() {
                     syncUploadModalWithActiveProject();
                     setShowUploadSourceModal(true);
                   }}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#14182b] hover:bg-[#1a2039] border border-white/10 text-xs font-bold text-slate-200 hover:text-white transition-all"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#14182b] hover:bg-[#1a2039] border border-white/10 text-xs font-bold text-slate-200 hover:text-white transition-all"
                   title="Upload new video version or change source"
                 >
                   <Upload className="w-3.5 h-3.5 text-slate-400" />
@@ -2384,7 +2384,7 @@ export default function App() {
                 <button
                   type="button"
                   onClick={openNotifyCenter}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#fed7aa] hover:bg-[#fde68a] text-[#9a3412] text-xs font-black transition-all shadow-sm"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#fed7aa] hover:bg-[#fde68a] text-[#9a3412] text-xs font-black transition-all shadow-sm"
                   title="Notify client of review milestones & updates"
                 >
                   <Bell className="w-3.5 h-3.5 fill-[#9a3412]" />
@@ -2396,7 +2396,7 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => setShowSettingsModal(true)}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#14182b] hover:bg-[#1a2039] border border-white/10 text-xs font-bold text-slate-200 hover:text-white transition-all relative"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#14182b] hover:bg-[#1a2039] border border-white/10 text-xs font-bold text-slate-200 hover:text-white transition-all relative"
                   title="Studio & Logo Settings"
                 >
                   <Settings className="w-3.5 h-3.5 text-slate-400" />
@@ -2409,8 +2409,8 @@ export default function App() {
         </section>
 
         {/* 3. PROJECT WORKSPACES CARDS (Matching Reference Asset: Project 1 Peach, Project 2 Mint, New Project) */}
-        <section className="relative z-10 max-w-[1380px] mx-auto px-4 sm:px-8 mb-5">
-          <div className="flex items-stretch gap-3.5 overflow-x-auto pb-2">
+        <section className="relative z-10 max-w-[1380px] mx-auto px-4 sm:px-8 mb-2 sm:mb-2.5">
+          <div className="flex items-stretch gap-3 overflow-x-auto pb-1.5 scrollbar-thin">
             {projects.map((proj, idx) => {
               const isSelected = proj.id === activeProject?.id;
               const stats = getProjectStats(proj.id);
@@ -2426,7 +2426,7 @@ export default function App() {
                   <div
                     key={proj.id}
                     onClick={() => handleSelectProject(proj.id, 'review')}
-                    className={`flex items-center justify-between gap-3 px-4 py-3 rounded-2xl min-w-[240px] cursor-pointer transition-all border ${
+                    className={`flex items-center justify-between gap-3 px-3.5 py-2 rounded-2xl min-w-[220px] cursor-pointer transition-all border ${
                       isSelected
                         ? 'bg-[#d1fae5] border-[#a7f3d0] ring-2 ring-emerald-500/50 shadow-lg'
                         : 'bg-[#d1fae5]/90 hover:bg-[#d1fae5] border-[#a7f3d0]/80 shadow-md'
@@ -2481,7 +2481,7 @@ export default function App() {
                 <div
                   key={proj.id}
                   onClick={() => handleSelectProject(proj.id, 'review')}
-                  className={`flex items-center justify-between gap-3 px-4 py-3 rounded-2xl min-w-[240px] cursor-pointer transition-all border ${
+                  className={`flex items-center justify-between gap-3 px-3.5 py-2 rounded-2xl min-w-[220px] cursor-pointer transition-all border ${
                     isSelected
                       ? 'bg-[#df9672] border-[#c8764e] ring-2 ring-orange-500/40 shadow-lg shadow-orange-950/40'
                       : 'bg-[#df9672]/90 hover:bg-[#df9672] border-[#c8764e]/80 shadow-md'
@@ -2537,7 +2537,7 @@ export default function App() {
             {!isStrictClientBookmark && (
               <div
                 onClick={() => setShowNewProjectModal(true)}
-                className="flex items-center gap-3 px-4 py-3 rounded-2xl border border-dashed border-white/20 hover:border-white/40 bg-[#13172b]/70 hover:bg-[#181d36] min-w-[210px] cursor-pointer transition-all shrink-0"
+                className="flex items-center gap-3 px-3.5 py-2 rounded-2xl border border-dashed border-white/20 hover:border-white/40 bg-[#13172b]/70 hover:bg-[#181d36] min-w-[185px] cursor-pointer transition-all shrink-0"
               >
                 <div className="w-8 h-8 rounded-xl bg-[#ea580c] text-white flex items-center justify-center font-bold text-base shrink-0 shadow-sm">
                   +
@@ -2552,10 +2552,10 @@ export default function App() {
         </section>
 
         {/* 4. ACTIVE SONG HEADER & REVISION PROGRESS BENTO CARD */}
-        <section className="relative z-10 max-w-[1380px] mx-auto px-4 sm:px-8 pb-3">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+        <section className="relative z-10 max-w-[1380px] mx-auto px-4 sm:px-8 pb-2 sm:pb-2.5">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-center">
             {/* Left: Project Title, Version Dropdown Pill, Video Badge, Deadline */}
-            <div className="lg:col-span-7 space-y-3">
+            <div className="lg:col-span-7 space-y-1.5 sm:space-y-2">
               {/* Inline Editable Project Title */}
               {editingTitle && role === 'editor' ? (
                 <div className="flex items-center gap-2">
@@ -2568,26 +2568,26 @@ export default function App() {
                       if (e.key === 'Enter') handleSaveInlineTitle();
                       if (e.key === 'Escape') setEditingTitle(false);
                     }}
-                    className="text-3xl font-black rounded-xl px-4 py-1.5 focus:outline-none w-full max-w-lg bg-[#0F1426] text-white border-2 border-[#FF6B00]"
+                    className="text-2xl sm:text-3xl font-black rounded-xl px-3.5 py-1 focus:outline-none w-full max-w-lg bg-[#0F1426] text-white border-2 border-[#FF6B00]"
                   />
                   <button
                     type="button"
                     onClick={handleSaveInlineTitle}
-                    className="p-2.5 rounded-xl bg-emerald-500 text-white font-bold"
+                    className="p-2 rounded-xl bg-emerald-500 text-white font-bold"
                   >
                     <Check className="w-4 h-4" />
                   </button>
                   <button
                     type="button"
                     onClick={() => setEditingTitle(false)}
-                    className="p-2.5 rounded-xl bg-white/10 text-slate-300 font-bold"
+                    className="p-2 rounded-xl bg-white/10 text-slate-300 font-bold"
                   >
                     <X className="w-4 h-4" />
                   </button>
                 </div>
               ) : (
-                <div className="group/title flex items-center gap-3">
-                  <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight leading-none">
+                <div className="group/title flex items-center gap-2.5">
+                  <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight leading-none">
                     {activeProject?.title}
                   </h1>
                   {role === 'editor' && (
@@ -2607,9 +2607,9 @@ export default function App() {
               )}
 
               {/* Project Deadline */}
-              <div className="flex flex-wrap items-center gap-2.5 pt-1">
+              <div className="flex flex-wrap items-center gap-2 pt-0.5">
                 {/* Deadline Pill */}
-                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-[#14182b] border border-white/10 text-xs font-bold text-slate-200">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-xl bg-[#14182b] border border-white/10 text-xs font-bold text-slate-200">
                   <Calendar className="w-3.5 h-3.5 text-amber-400" />
                   <span>Deadline:</span>
                   {editingDeadline && role === 'editor' ? (
@@ -2650,42 +2650,42 @@ export default function App() {
 
             {/* Right: Revision Progress Widget */}
             <div className="lg:col-span-5 flex justify-end">
-              <div className="w-full max-w-md bg-[#161B2E] border border-white/10 rounded-2xl p-5 space-y-3.5 shadow-xl">
+              <div className="w-full max-w-md bg-[#161B2E] border border-white/10 rounded-2xl p-3 sm:p-3.5 space-y-2 shadow-xl">
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">
+                    <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 block">
                       REVISION PROGRESS
                     </span>
-                    <h3 className="text-base font-extrabold text-white mt-0.5">
+                    <h3 className="text-sm sm:text-base font-extrabold text-white mt-0.5">
                       {activeStats.resolved} of {activeStats.total} Fixes Resolved
                     </h3>
                   </div>
-                  <div className="px-3 py-1 rounded-lg bg-[#FED7AA] text-[#9A3412] font-black text-xs">
+                  <div className="px-2.5 py-0.5 rounded-lg bg-[#FED7AA] text-[#9A3412] font-black text-xs">
                     {activeStats.percent}%
                   </div>
                 </div>
 
-                {/* Thick Vibrant Orange Progress Bar */}
-                <div className="h-2.5 rounded-full bg-slate-800 overflow-hidden">
+                {/* Vibrant Orange Progress Bar */}
+                <div className="h-2 rounded-full bg-slate-800 overflow-hidden">
                   <div
-                    className="h-full rounded-full bg-[#FF6B00] shadow-[0_0_14px_rgba(255,107,0,0.6)] transition-all duration-500"
+                    className="h-full rounded-full bg-[#FF6B00] shadow-[0_0_12px_rgba(255,107,0,0.6)] transition-all duration-500"
                     style={{ width: `${activeStats.percent}%` }}
                   />
                 </div>
 
                 {/* 3 Stat Counter Boxes */}
-                <div className="grid grid-cols-3 gap-2.5 pt-0.5 text-center">
-                  <div className="p-2.5 rounded-xl bg-[#0F1426] border border-white/5 flex items-center justify-center gap-1.5">
+                <div className="grid grid-cols-3 gap-2 pt-0.5 text-center">
+                  <div className="p-1.5 sm:p-2 rounded-xl bg-[#0F1426] border border-white/5 flex items-center justify-center gap-1.5">
                     <FileText className="w-3.5 h-3.5 text-slate-400" />
                     <span className="text-xs font-black text-white">{activeStats.total}</span>
                     <span className="text-[9px] font-bold text-slate-400 uppercase">TOTAL NOTES</span>
                   </div>
-                  <div className="p-2.5 rounded-xl bg-emerald-950/60 border border-emerald-500/30 flex items-center justify-center gap-1.5 text-emerald-400">
+                  <div className="p-1.5 sm:p-2 rounded-xl bg-emerald-950/60 border border-emerald-500/30 flex items-center justify-center gap-1.5 text-emerald-400">
                     <Check className="w-3.5 h-3.5" />
                     <span className="text-xs font-black">{activeStats.resolved}</span>
                     <span className="text-[9px] font-bold uppercase">FIXED</span>
                   </div>
-                  <div className="p-2.5 rounded-xl bg-[#3E2313] border border-amber-600/30 flex items-center justify-center gap-1.5 text-amber-400">
+                  <div className="p-1.5 sm:p-2 rounded-xl bg-[#3E2313] border border-amber-600/30 flex items-center justify-center gap-1.5 text-amber-400">
                     <Clock className="w-3.5 h-3.5" />
                     <span className="text-xs font-black">{activeStats.pending}</span>
                     <span className="text-[9px] font-bold uppercase">PENDING</span>
@@ -2701,15 +2701,15 @@ export default function App() {
           AGENT 3: BOTTOM ZONE — CLEAN WHITE WORKSPACE (#FFFFFF / #F8F9FA)
           Encompasses: Pill Navigation Bar, Video Player Console & Feedback Notes
           ========================================================================= */}
-      <div className="bottom-zone-white border-t border-slate-200/90 text-slate-900 pt-4 sm:pt-5 pb-20 relative min-h-[600px]">
+      <div className="bottom-zone-white border-t border-slate-200/90 text-slate-900 pt-2.5 sm:pt-3 pb-16 relative min-h-[600px]">
         {/* ===================================================================== */}
         {/* MAIN WORKSPACE SECTION                                                */}
         {/* ===================================================================== */}
-        <main className="max-w-[1380px] mx-auto px-4 sm:px-8 relative z-20 space-y-6">
+        <main className="max-w-[1380px] mx-auto px-4 sm:px-8 relative z-20 space-y-3.5 sm:space-y-4">
 
         {/* POINT 7: SMART DYNAMIC 9:16 REFLOWING GRID */}
         <div
-          className={`grid gap-7 items-start ${
+          className={`grid gap-4 sm:gap-5 items-start ${
             isComparisonMode
               ? 'grid-cols-1'
               : videoLayoutMode === 'top-bottom'
@@ -2731,11 +2731,11 @@ export default function App() {
               themeMode === 'dark'
                 ? 'glass-panel-dark text-slate-100'
                 : 'bg-white border border-slate-200/90 shadow-[0_4px_20px_-4px_rgba(15,23,42,0.06)] text-slate-900'
-            } p-4 sm:p-6`}
+            } p-3.5 sm:p-4`}
           >
             {/* VIDEO PLAYER HEADER BAR WITH MULTI-VERSION, COMPARISON & SOURCE VIEW TOGGLES */}
             <div
-              className={`pb-4 mb-4 border-b space-y-3 ${
+              className={`pb-2.5 mb-2.5 border-b space-y-2 ${
                 themeMode === 'dark' ? 'border-white/[0.08]' : 'border-slate-200'
               }`}
             >
@@ -3635,7 +3635,7 @@ export default function App() {
             } space-y-5 transition-all duration-300`}
           >
             <div
-              className={`min-h-[600px] h-auto rounded-[28px] shadow-xl border p-5 sm:p-6 flex flex-col transition-colors ${
+              className={`min-h-[560px] h-auto rounded-[28px] shadow-xl border p-3.5 sm:p-4 flex flex-col transition-colors ${
                 themeMode === 'dark'
                   ? 'glass-panel-dark text-slate-100'
                   : 'bg-white border-[#E9ECEF] shadow-[0_10px_35px_-8px_rgba(15,23,42,0.06),0_1px_3px_0_rgba(15,23,42,0.02)] text-slate-800'
@@ -3643,7 +3643,7 @@ export default function App() {
             >
               {/* Header & Status Filter & Expansion Toggle (Matching Reference Asset) */}
               <div
-                className={`flex flex-wrap items-center justify-between gap-2.5 pb-3.5 mb-3 border-b ${
+                className={`flex flex-wrap items-center justify-between gap-2 pb-2.5 mb-2.5 border-b ${
                   themeMode === 'dark' ? 'border-white/[0.08]' : 'border-[#F1F3F5]'
                 }`}
               >
