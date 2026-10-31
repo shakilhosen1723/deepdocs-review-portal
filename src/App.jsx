@@ -173,7 +173,7 @@ const INITIAL_PROJECTS = [
         id: 'ver_2_1',
         version_label: 'APPROVED',
         source_type: 'r2',
-        r2Url: DEMO_FALLBACK_MP4,
+        r2Url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
         driveUrl: 'https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view',
         youtubeUrl: 'https://www.youtube.com/watch?v=aqz-KE-bpKQ',
         created_at: '2026-10-24T09:15:00Z'
@@ -181,10 +181,10 @@ const INITIAL_PROJECTS = [
     ],
     status_label: 'Status: Approved & Completed',
     source_type: 'r2',
-    r2Url: DEMO_FALLBACK_MP4,
+    r2Url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
     driveUrl: 'https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view',
     youtubeUrl: 'https://www.youtube.com/watch?v=aqz-KE-bpKQ',
-    video_url: DEMO_FALLBACK_MP4,
+    video_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
     deadline: '2026-11-25',
     client_whatsapp: '+15550192834',
     client_email: 'production@sepandstudios.example.com',
@@ -560,19 +560,70 @@ export default function App() {
   });
 
   // ROBUST PROJECT INITIALIZATION & PERSISTENCE
+  // INITIAL_PROJECTS acts as the robust, single source of truth for default project configurations and video links.
   const [projects, setProjects] = useState(() => {
     try {
       const saved =
         localStorage.getItem('deepdox_projects_v7') ||
         localStorage.getItem('deepdox_projects_v9') ||
         localStorage.getItem('deepdox_projects_v8');
+
+      let loaded = INITIAL_PROJECTS.map(normalizeProject);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          loaded = parsed.map(normalizeProject);
+        }
       }
-      return INITIAL_PROJECTS;
+
+      // Quick synchronization check for URL parameters (?video=... or ?vurl=...)
+      const p = new URLSearchParams(window.location.search);
+      const urlVideo = p.get('video') || p.get('vurl');
+      const urlProjId = p.get('project');
+      const urlType =
+        p.get('type') ||
+        (urlVideo?.includes('drive.google.com')
+          ? 'gdrive'
+          : urlVideo?.includes('youtube') || urlVideo?.includes('youtu.be')
+          ? 'youtube'
+          : 'r2');
+      const urlTitle = p.get('title');
+
+      if (urlVideo && urlVideo.trim() && !urlVideo.includes('asldkfasdfsl.mp4')) {
+        const cleanUrl = urlVideo.trim();
+        const targetProjId =
+          urlProjId && loaded.some((pr) => pr.id === urlProjId) ? urlProjId : loaded[0].id;
+        loaded = loaded.map((proj) => {
+          if (proj.id !== targetProjId) return proj;
+          const activeVerId = proj.active_version_id || proj.versions?.[0]?.id;
+          const updatedVers = (proj.versions || []).map((v) => {
+            if (v.id === activeVerId) {
+              return {
+                ...v,
+                source_type: urlType,
+                r2Url: urlType === 'r2' ? cleanUrl : v.r2Url,
+                driveUrl: urlType === 'gdrive' ? cleanUrl : v.driveUrl,
+                youtubeUrl: urlType === 'youtube' ? cleanUrl : v.youtubeUrl
+              };
+            }
+            return v;
+          });
+          return {
+            ...proj,
+            title: urlTitle ? decodeURIComponent(urlTitle) : proj.title,
+            source_type: urlType,
+            r2Url: urlType === 'r2' ? cleanUrl : proj.r2Url,
+            driveUrl: urlType === 'gdrive' ? cleanUrl : proj.driveUrl,
+            youtubeUrl: urlType === 'youtube' ? cleanUrl : proj.youtubeUrl,
+            video_url: cleanUrl,
+            versions: updatedVers
+          };
+        });
+      }
+
+      return loaded;
     } catch {
-      return INITIAL_PROJECTS;
+      return INITIAL_PROJECTS.map(normalizeProject);
     }
   });
 
@@ -581,11 +632,29 @@ export default function App() {
       const saved =
         localStorage.getItem('deepdox_markers_v7') ||
         localStorage.getItem('deepdox_markers_v8');
-      return saved ? JSON.parse(saved) : INITIAL_MARKERS;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+      return INITIAL_MARKERS;
     } catch {
       return INITIAL_MARKERS;
     }
   });
+
+  // Seed localStorage fallback if empty on new client device or browser session
+  useEffect(() => {
+    try {
+      const existing = localStorage.getItem('deepdox_projects_v7');
+      if (!existing) {
+        localStorage.setItem('deepdox_projects_v7', JSON.stringify(projects));
+        localStorage.setItem('deepdox_markers_v7', JSON.stringify(markers));
+        localStorage.setItem('deepdox_settings_v7', JSON.stringify(settings));
+      }
+    } catch (e) {
+      console.warn('Initial storage seed warning:', e);
+    }
+  }, [projects, markers, settings]);
 
   const [reviewActiveTab, setReviewActiveTab] = useState('review');
 
