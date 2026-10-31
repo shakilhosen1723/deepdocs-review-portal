@@ -564,13 +564,62 @@ export default function App() {
       const savedV9 = localStorage.getItem('deepdox_projects_v9');
       const savedV8 = localStorage.getItem('deepdox_projects_v8');
       const saved = savedV9 || savedV8;
+      let loaded = INITIAL_PROJECTS.map(normalizeProject);
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed.map(normalizeProject);
+          loaded = parsed.map(normalizeProject);
         }
       }
-      return INITIAL_PROJECTS.map(normalizeProject);
+
+      // URL PARAMETER HYDRATION:
+      // If a video link is passed in the URL (?video=... or ?vurl=...), immediately attach and lock it into the project!
+      // This guarantees that any client opening a shared link on WhatsApp, email or phone ALWAYS receives the exact video.
+      const p = new URLSearchParams(window.location.search);
+      const urlVideo = p.get('video') || p.get('vurl');
+      const urlProjId = p.get('project');
+      const urlType =
+        p.get('type') ||
+        (urlVideo?.includes('drive.google.com')
+          ? 'gdrive'
+          : urlVideo?.includes('youtube') || urlVideo?.includes('youtu.be')
+          ? 'youtube'
+          : 'r2');
+      const urlTitle = p.get('title');
+
+      if (urlVideo && urlVideo.trim() && !urlVideo.includes('asldkfasdfsl.mp4')) {
+        const cleanUrl = urlVideo.trim();
+        const targetProjId =
+          urlProjId && loaded.some((pr) => pr.id === urlProjId) ? urlProjId : loaded[0].id;
+        loaded = loaded.map((proj) => {
+          if (proj.id !== targetProjId) return proj;
+          const activeVerId = proj.active_version_id || proj.versions?.[0]?.id;
+          const updatedVers = (proj.versions || []).map((v) => {
+            if (v.id === activeVerId) {
+              return {
+                ...v,
+                source_type: urlType,
+                r2Url: urlType === 'r2' ? cleanUrl : v.r2Url,
+                driveUrl: urlType === 'gdrive' ? cleanUrl : v.driveUrl,
+                youtubeUrl: urlType === 'youtube' ? cleanUrl : v.youtubeUrl
+              };
+            }
+            return v;
+          });
+          return {
+            ...proj,
+            title: urlTitle ? decodeURIComponent(urlTitle) : proj.title,
+            source_type: urlType,
+            r2Url: urlType === 'r2' ? cleanUrl : proj.r2Url,
+            driveUrl: urlType === 'gdrive' ? cleanUrl : proj.driveUrl,
+            youtubeUrl: urlType === 'youtube' ? cleanUrl : proj.youtubeUrl,
+            video_url: cleanUrl,
+            versions: updatedVers
+          };
+        });
+      }
+
+      return loaded;
     } catch {
       return INITIAL_PROJECTS.map(normalizeProject);
     }
@@ -1228,6 +1277,16 @@ export default function App() {
     saveProjectsToStorage(updated);
     setVideoError(false);
     setCurrentTime(0);
+
+    // Sync active video to URL parameters so page refreshes never lose the link
+    try {
+      const currentUrl = new URL(window.location.href);
+      currentUrl.searchParams.set('project', activeProject?.id || 'proj_1');
+      currentUrl.searchParams.set('video', cleanUrl);
+      currentUrl.searchParams.set('type', sourceType);
+      window.history.replaceState({}, '', currentUrl.toString());
+    } catch {}
+
     showToast(`Video URL saved and locked to ${activeVersion?.version_label || 'active video'}!`);
   };
 
@@ -1724,6 +1783,16 @@ export default function App() {
     setProjects(updated);
     saveProjectsToStorage(updated);
     setVideoError(false);
+
+    // Sync active video to URL parameters so page refreshes never lose the link
+    try {
+      const currentUrl = new URL(window.location.href);
+      currentUrl.searchParams.set('project', activeProject?.id || 'proj_1');
+      currentUrl.searchParams.set('video', chosenUrl);
+      currentUrl.searchParams.set('type', sourceUpdateForm.source_type);
+      window.history.replaceState({}, '', currentUrl.toString());
+    } catch {}
+
     setShowUploadSourceModal(false);
     showToast('Updated and saved project video source & URL!');
   };
@@ -1867,10 +1936,28 @@ export default function App() {
     showToast('Reset all studio settings & projects to default');
   };
 
-  // Bookmark Review URL Helper
+  // Bookmark Review URL Helper (Self-Contained with Video Stream URL attached)
   const getClientBookmarkLink = () => {
     const base = window.location.origin + window.location.pathname;
-    return `${base}?view=client&project=${activeProject?.id || ''}`;
+    const currentVideo =
+      activeVersion?.r2Url ||
+      activeProject?.r2Url ||
+      (activeProject?.video_url && !activeProject.video_url.includes('asldkfasdfsl.mp4')
+        ? activeProject.video_url
+        : '');
+    const currentType = activeVersion?.source_type || activeProject?.source_type || 'r2';
+
+    const params = new URLSearchParams();
+    params.set('view', 'client');
+    params.set('project', activeProject?.id || '');
+    if (currentVideo && currentVideo !== DEMO_FALLBACK_MP4) {
+      params.set('video', currentVideo);
+      params.set('type', currentType);
+    }
+    if (activeProject?.title) {
+      params.set('title', activeProject.title);
+    }
+    return `${base}?${params.toString()}`;
   };
 
   const copyClientBookmarkLink = () => {
