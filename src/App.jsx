@@ -83,6 +83,15 @@ const DEFAULT_FAVICON_SVG =
   `);
 
 // ==========================================
+// SUPABASE LIVE CLOUD SYNC CONFIGURATION
+// ==========================================
+const SUPABASE_URL = 'https://ysugdxzpixasjycewblg.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_Ny8Rx_02YCDL6SCUBoy0Ig_zH9wa5Xg';
+const SUPABASE_SYNC_TABLE = 'deepdox_portal_state';
+const SUPABASE_ENDPOINT = `${SUPABASE_URL}/rest/v1/${SUPABASE_SYNC_TABLE}`;
+const PORTAL_STATE_ID = 'master_workspace';
+
+// ==========================================
 // INITIAL DEMO DATA & DEEPDOX CONFIGURATION
 // ==========================================
 const DEFAULT_SETTINGS = {
@@ -877,6 +886,154 @@ export default function App() {
       console.error('Failed to save state to localStorage:', e);
     }
   }, [projects, markers, settings, role, isStrictClientBookmark]);
+
+  // =========================================================================
+  // SUPABASE TWO-WAY LIVE CLOUD SYNC (EDITOR <-> CLIENT ACROSS ALL DEVICES)
+  // =========================================================================
+  const [syncStatus, setSyncStatus] = useState('connecting'); // 'connecting' | 'live' | 'syncing' | 'error'
+  const lastSyncTimestampRef = useRef(0);
+  const isApplyingRemoteRef = useRef(false);
+  const hasLoadedInitialCloudRef = useRef(false);
+
+  const projectsRef = useRef(projects);
+  const markersRef = useRef(markers);
+  const settingsRef = useRef(settings);
+  useEffect(() => {
+    projectsRef.current = projects;
+    markersRef.current = markers;
+    settingsRef.current = settings;
+  }, [projects, markers, settings]);
+
+  const supabaseHeaders = useMemo(
+    () => ({
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json'
+    }),
+    []
+  );
+
+  // 1. Push Local State to Supabase
+  const pushToSupabase = useCallback(
+    async (nextProjects, nextMarkers, nextSettings) => {
+      if (isApplyingRemoteRef.current || !hasLoadedInitialCloudRef.current) return;
+
+      const now = Date.now();
+      lastSyncTimestampRef.current = now;
+      setSyncStatus('syncing');
+
+      try {
+        const res = await fetch(`${SUPABASE_ENDPOINT}?on_conflict=id`, {
+          method: 'POST',
+          headers: {
+            ...supabaseHeaders,
+            Prefer: 'resolution=merge-duplicates,return=minimal'
+          },
+          body: JSON.stringify({
+            id: PORTAL_STATE_ID,
+            updated_at: now,
+            projects: nextProjects,
+            markers: nextMarkers,
+            settings: nextSettings
+          })
+        });
+
+        if (res.ok) {
+          setSyncStatus('live');
+        } else {
+          console.warn('Supabase push status:', res.status);
+          setSyncStatus('error');
+        }
+      } catch (err) {
+        console.warn('Supabase push failed:', err);
+        setSyncStatus('error');
+      }
+    },
+    [supabaseHeaders]
+  );
+
+  // 2. Pull Remote State from Supabase (On Load + Every 3 Seconds)
+  useEffect(() => {
+    let isMounted = true;
+
+    const pullFromSupabase = async () => {
+      try {
+        const res = await fetch(
+          `${SUPABASE_ENDPOINT}?id=eq.${PORTAL_STATE_ID}&select=*`,
+          {
+            method: 'GET',
+            headers: supabaseHeaders
+          }
+        );
+
+        if (!res.ok) {
+          if (isMounted) setSyncStatus('error');
+          return;
+        }
+
+        const rows = await res.json();
+        if (!isMounted) return;
+
+        // If table is empty on first run, seed Supabase with current local data
+        if (!Array.isArray(rows) || rows.length === 0) {
+          hasLoadedInitialCloudRef.current = true;
+          await pushToSupabase(projectsRef.current, markersRef.current, settingsRef.current);
+          return;
+        }
+
+        const remote = rows[0];
+        hasLoadedInitialCloudRef.current = true;
+
+        // Apply remote state if it is newer than our local version
+        if (remote.updated_at && remote.updated_at > lastSyncTimestampRef.current) {
+          isApplyingRemoteRef.current = true;
+          lastSyncTimestampRef.current = remote.updated_at;
+
+          if (Array.isArray(remote.projects) && remote.projects.length > 0) {
+            const normalized = remote.projects.map(normalizeProject);
+            setProjects(normalized);
+            saveProjectsToStorage(normalized);
+          }
+
+          if (Array.isArray(remote.markers)) {
+            setMarkers(remote.markers);
+            localStorage.setItem('deepdox_markers_v7', JSON.stringify(remote.markers));
+          }
+
+          if (remote.settings && Object.keys(remote.settings).length > 0) {
+            setSettings((prev) => ({ ...prev, ...remote.settings }));
+          }
+
+          setTimeout(() => {
+            isApplyingRemoteRef.current = false;
+          }, 350);
+        }
+
+        setSyncStatus('live');
+      } catch (err) {
+        if (isMounted) setSyncStatus('error');
+      }
+    };
+
+    pullFromSupabase();
+    const intervalId = setInterval(pullFromSupabase, 3000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(intervalId);
+    };
+  }, [supabaseHeaders, pushToSupabase]);
+
+  // 3. Auto-Trigger Push Whenever Projects, Markers, or Settings Change Locally
+  useEffect(() => {
+    if (isApplyingRemoteRef.current || !hasLoadedInitialCloudRef.current) return;
+
+    const debounceTimer = setTimeout(() => {
+      pushToSupabase(projects, markers, settings);
+    }, 450);
+
+    return () => clearTimeout(debounceTimer);
+  }, [projects, markers, settings, pushToSupabase]);
 
   // PROJECT STATS & MARKER FILTERING
   const getProjectStats = useCallback(
@@ -2317,6 +2474,35 @@ export default function App() {
 
             {/* Right: Dark Studio toggle, Role Switcher, Portrait Avatar */}
             <div className="flex items-center gap-3">
+              {/* Supabase Live Sync Status Pill */}
+              <div
+                className={`hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-black border ${
+                  syncStatus === 'live'
+                    ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                    : syncStatus === 'syncing'
+                    ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                    : 'bg-rose-500/15 text-rose-400 border-rose-500/30'
+                }`}
+                title="Two-Way Supabase Cloud Sync Status"
+              >
+                <span
+                  className={`w-2 h-2 rounded-full ${
+                    syncStatus === 'live'
+                      ? 'bg-emerald-400 animate-pulse'
+                      : syncStatus === 'syncing'
+                      ? 'bg-amber-400 animate-spin'
+                      : 'bg-rose-400'
+                  }`}
+                />
+                <span>
+                  {syncStatus === 'live'
+                    ? 'LIVE SYNC'
+                    : syncStatus === 'syncing'
+                    ? 'SYNCING...'
+                    : 'SYNC OFFLINE'}
+                </span>
+              </div>
+
               {/* Theme Mode Toggle Button */}
               <button
                 type="button"
