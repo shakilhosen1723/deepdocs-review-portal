@@ -4,7 +4,6 @@ import {
   Pause,
   RotateCcw,
   RotateCw,
-  Plus,
   Check,
   MessageSquare,
   Send,
@@ -12,7 +11,6 @@ import {
   Bookmark,
   Film,
   CheckCircle2,
-  Clock,
   Sparkles,
   FolderPlus,
   Eye,
@@ -25,25 +23,45 @@ import {
   Upload,
   Cloud,
   HardDrive,
-  ExternalLink,
   AlertTriangle,
   Calendar,
   Volume2,
   VolumeX,
   Maximize,
-  BellOff,
-  PartyPopper,
   Edit3,
-  RefreshCw,
-  ShieldCheck,
-  HelpCircle,
-  ChevronDown
+  ChevronDown,
+  Image as ImageIcon,
+  RefreshCw
 } from 'lucide-react';
 
+// ==========================================
+// DEFAULT SVG FAVICON FOR BROWSER TAB
+// ==========================================
+const DEFAULT_FAVICON_SVG =
+  "data:image/svg+xml;utf8," +
+  encodeURIComponent(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+      <defs>
+        <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#8b5cf6" />
+          <stop offset="50%" stop-color="#d946ef" />
+          <stop offset="100%" stop-color="#4f46e5" />
+        </linearGradient>
+      </defs>
+      <rect width="64" height="64" rx="16" fill="url(#g)" />
+      <rect x="4" y="4" width="56" height="56" rx="13" fill="#21094e" fill-opacity="0.82" />
+      <polygon points="25,18 25,46 47,32" fill="#ffffff" />
+    </svg>
+  `);
+
+// ==========================================
+// INITIAL DEMO DATA & DEEPDOX CONFIGURATION
+// ==========================================
 const DEFAULT_SETTINGS = {
   studioName: 'DeepDox',
   studioBadge: 'PRO SUITE',
   studioSubName: 'Interactive Video Review & Client Portal',
+  studioLogo: '',
   editorName: 'Shakil Hosen',
   editorEmail: 'shakilhossion917@gmail.com',
   editorWhatsapp: '+8801700000000',
@@ -53,10 +71,22 @@ const DEFAULT_SETTINGS = {
 };
 
 const MARKER_CATEGORIES = [
-  { label: 'Visual / VFX', pill: 'bg-purple-100 text-purple-700 border-purple-200' },
-  { label: 'Cut / Timing', pill: 'bg-amber-100 text-amber-800 border-amber-200' },
-  { label: 'Color Grade', pill: 'bg-pink-100 text-pink-700 border-pink-200' },
-  { label: 'Audio Mix', pill: 'bg-indigo-100 text-indigo-700 border-indigo-200' }
+  {
+    label: 'Visual / VFX',
+    pill: 'bg-purple-100 text-purple-700 border-purple-200'
+  },
+  {
+    label: 'Cut / Timing',
+    pill: 'bg-amber-100 text-amber-800 border-amber-200'
+  },
+  {
+    label: 'Color Grade',
+    pill: 'bg-pink-100 text-pink-700 border-pink-200'
+  },
+  {
+    label: 'Audio Mix',
+    pill: 'bg-indigo-100 text-indigo-700 border-indigo-200'
+  }
 ];
 
 const INITIAL_PROJECTS = [
@@ -129,7 +159,8 @@ const INITIAL_MARKERS = [
     project_id: 'proj_1',
     timestamp_seconds: 46.0,
     category: 'Cut / Timing',
-    client_comment: 'Cut to the wide holographic stage angle 12 frames earlier right on the drum impact.',
+    client_comment:
+      'Cut to the wide holographic stage angle 12 frames earlier right on the drum impact.',
     is_resolved: false,
     editor_reply: '',
     created_at: '2026-10-20T15:04:00Z'
@@ -176,8 +207,12 @@ const INITIAL_MARKERS = [
   }
 ];
 
-const DEMO_FALLBACK_MP4 = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4';
+const DEMO_FALLBACK_MP4 =
+  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4';
 
+// ==========================================
+// HELPER UTILITIES
+// ==========================================
 function formatTimecode(seconds, longFormat = true) {
   if (!seconds || isNaN(seconds) || seconds < 0) {
     return longFormat ? '00:00:00' : '00:00';
@@ -186,39 +221,78 @@ function formatTimecode(seconds, longFormat = true) {
   const mins = Math.floor((seconds % 3600) / 60);
   const secs = Math.floor(seconds % 60);
   if (longFormat) {
-    return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(
+      secs
+    ).padStart(2, '0')}`;
   }
   return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
 }
 
 function resolveVideoEngine(project) {
   if (!project) {
-    return { mode: 'r2', badge: 'Direct MP4 Stream', streamUrl: '', embedUrl: '' };
+    return {
+      mode: 'r2',
+      badge: 'Direct MP4 Stream',
+      streamUrl: '',
+      embedUrl: ''
+    };
   }
+
   const preferredType = project.source_type || 'r2';
-  const r2Candidate = (project.r2Url || (!project.video_url?.includes('drive.google.com') ? project.video_url : '') || 'https://pub-5b8238b2b8084659bd705080ea7f8fed.r2.dev/asldkfasdfsl.mp4').trim();
-  const driveCandidate = (project.driveUrl || (project.video_url?.includes('drive.google.com') ? project.video_url : '') || 'https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view').trim();
+  const r2Candidate = (
+    project.r2Url ||
+    (!project.video_url?.includes('drive.google.com') ? project.video_url : '') ||
+    DEMO_FALLBACK_MP4
+  ).trim();
+
+  const driveCandidate = (
+    project.driveUrl ||
+    (project.video_url?.includes('drive.google.com') ? project.video_url : '') ||
+    'https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view'
+  ).trim();
 
   if (preferredType === 'gdrive') {
-    const fileIdMatch = driveCandidate.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || driveCandidate.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+    const fileIdMatch =
+      driveCandidate.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) ||
+      driveCandidate.match(/[?&]id=([a-zA-Z0-9_-]+)/);
     const fileId = fileIdMatch && fileIdMatch[1] ? fileIdMatch[1] : null;
-    const embedUrl = fileId ? `https://drive.google.com/file/d/${fileId}/preview` : (driveCandidate.includes('/preview') ? driveCandidate : driveCandidate.replace(/\/view.*$/, '/preview'));
-    return { mode: 'gdrive', badge: 'Google Drive Preview', streamUrl: driveCandidate, embedUrl };
+    const embedUrl = fileId
+      ? `https://drive.google.com/file/d/${fileId}/preview`
+      : driveCandidate.includes('/preview')
+      ? driveCandidate
+      : driveCandidate.replace(/\/view.*$/, '/preview');
+    return {
+      mode: 'gdrive',
+      badge: 'Google Drive Preview',
+      streamUrl: driveCandidate,
+      embedUrl
+    };
   }
 
-  return { mode: 'r2', badge: 'Direct MP4 Stream', streamUrl: r2Candidate, embedUrl: r2Candidate };
+  return {
+    mode: 'r2',
+    badge: 'Direct MP4 Stream',
+    streamUrl: r2Candidate,
+    embedUrl: r2Candidate
+  };
 }
 
 function formatDeadlineDisplay(dateString) {
   if (!dateString) return 'No Deadline';
   const target = new Date(dateString + 'T23:59:59');
   if (isNaN(target.getTime())) return dateString;
-  return target.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  return target.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  });
 }
 
 function DotMatrix({ className = '' }) {
   return (
-    <div className={`grid grid-cols-6 gap-2 pointer-events-none select-none opacity-25 ${className}`}>
+    <div
+      className={`grid grid-cols-6 gap-2 pointer-events-none select-none opacity-25 ${className}`}
+    >
       {Array.from({ length: 36 }).map((_, i) => (
         <span key={i} className="w-1 h-1 rounded-full bg-white block" />
       ))}
@@ -226,9 +300,13 @@ function DotMatrix({ className = '' }) {
   );
 }
 
+// ==========================================
+// MAIN APPLICATION COMPONENT
+// ==========================================
 export default function App() {
   const urlParams = useMemo(() => new URLSearchParams(window.location.search), []);
-  const isStrictClientBookmark = urlParams.get('view') === 'client' || urlParams.get('role') === 'client';
+  const isStrictClientBookmark =
+    urlParams.get('view') === 'client' || urlParams.get('role') === 'client';
 
   const [role, setRole] = useState(() => {
     if (isStrictClientBookmark) return 'client';
@@ -253,11 +331,21 @@ export default function App() {
       const saved = localStorage.getItem('deepdox_projects_v6');
       if (saved) {
         const parsed = JSON.parse(saved);
-        return parsed.map((p) => ({
-          ...p,
-          r2Url: p.r2Url || (!p.video_url?.includes('drive.google.com') ? p.video_url : 'https://pub-5b8238b2b8084659bd705080ea7f8fed.r2.dev/asldkfasdfsl.mp4'),
-          driveUrl: p.driveUrl || (p.video_url?.includes('drive.google.com') ? p.video_url : 'https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view')
-        }));
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map((p) => ({
+            ...p,
+            r2Url:
+              p.r2Url ||
+              (!p.video_url?.includes('drive.google.com')
+                ? p.video_url
+                : DEMO_FALLBACK_MP4),
+            driveUrl:
+              p.driveUrl ||
+              (p.video_url?.includes('drive.google.com')
+                ? p.video_url
+                : 'https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view')
+          }));
+        }
       }
       return INITIAL_PROJECTS;
     } catch {
@@ -284,6 +372,8 @@ export default function App() {
   const playerContainerRef = useRef(null);
   const timelineRef = useRef(null);
   const commentInputRef = useRef(null);
+  const logoFileInputRef = useRef(null);
+  const localVideoFileInputRef = useRef(null);
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -320,14 +410,17 @@ export default function App() {
     client_name: 'Sepand Studios',
     version_label: 'Cut v1.0',
     source_type: 'r2',
-    r2Url: 'https://pub-5b8238b2b8084659bd705080ea7f8fed.r2.dev/asldkfasdfsl.mp4',
-    driveUrl: '',
+    r2Url: DEMO_FALLBACK_MP4,
+    driveUrl: 'https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view',
     deadline: '2026-11-20',
     client_email: '',
     client_whatsapp: ''
   });
 
   const [sourceUpdateForm, setSourceUpdateForm] = useState({
+    title: '',
+    client_name: '',
+    status_label: '',
     source_type: 'r2',
     r2Url: '',
     driveUrl: '',
@@ -347,6 +440,43 @@ export default function App() {
     }, 4000);
   };
 
+  const activeProject = useMemo(() => {
+    return projects.find((p) => p.id === activeProjectId) || projects[0];
+  }, [projects, activeProjectId]);
+
+  // =========================================================================
+  // DYNAMIC BROWSER TAB FAVICON & PAGE TITLE SYNC
+  // =========================================================================
+  useEffect(() => {
+    const faviconHref =
+      settings.studioLogo && settings.studioLogo.trim() !== ''
+        ? settings.studioLogo.trim()
+        : DEFAULT_FAVICON_SVG;
+
+    let link = document.querySelector("link[rel~='icon']");
+    if (!link) {
+      link = document.createElement('link');
+      link.rel = 'icon';
+      document.head.appendChild(link);
+    }
+    link.href = faviconHref;
+
+    let appleLink = document.querySelector("link[rel='apple-touch-icon']");
+    if (!appleLink) {
+      appleLink = document.createElement('link');
+      appleLink.rel = 'apple-touch-icon';
+      document.head.appendChild(appleLink);
+    }
+    appleLink.href = faviconHref;
+
+    const studioTitle = settings.studioName || 'DeepDox';
+    const projTitle = activeProject?.title ? ` — ${activeProject.title}` : '';
+    document.title = `${studioTitle}${projTitle}`;
+  }, [settings.studioLogo, settings.studioName, activeProject?.title]);
+
+  // =========================================================================
+  // LOCAL STORAGE PERSISTENCE
+  // =========================================================================
   useEffect(() => {
     try {
       localStorage.setItem('deepdox_projects_v6', JSON.stringify(projects));
@@ -360,10 +490,6 @@ export default function App() {
       console.error('Storage error:', e);
     }
   }, [projects, markers, settings, role, themeMode, isStrictClientBookmark]);
-
-  const activeProject = useMemo(() => {
-    return projects.find((p) => p.id === activeProjectId) || projects[0];
-  }, [projects, activeProjectId]);
 
   const getProjectStats = (projectId) => {
     const list = markers.filter((m) => m.project_id === projectId);
@@ -397,21 +523,56 @@ export default function App() {
     return resolveVideoEngine(activeProject);
   }, [activeProject]);
 
+  const syncUploadModalWithActiveProject = () => {
+    if (!activeProject) return;
+    setSourceUpdateForm({
+      title: activeProject.title || '',
+      client_name: activeProject.client_name || 'Sepand Studios',
+      status_label: activeProject.status_label || 'Status: In Revision / Fixing Notes',
+      source_type: activeProject.source_type || 'r2',
+      r2Url:
+        activeProject.r2Url ||
+        (!activeProject.video_url?.includes('drive.google.com')
+          ? activeProject.video_url
+          : DEMO_FALLBACK_MP4),
+      driveUrl:
+        activeProject.driveUrl ||
+        (activeProject.video_url?.includes('drive.google.com')
+          ? activeProject.video_url
+          : 'https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view'),
+      version_label: activeProject.version_label || 'Cut v1.0'
+    });
+  };
+
   useEffect(() => {
     setVideoError(false);
     setCurrentTime(0);
     setDuration(0);
     setIsPlaying(false);
     setLockedTimestamp(null);
-    if (activeProject) {
-      setSourceUpdateForm({
-        source_type: activeProject.source_type || 'r2',
-        r2Url: activeProject.r2Url || (!activeProject.video_url?.includes('drive.google.com') ? activeProject.video_url : 'https://pub-5b8238b2b8084659bd705080ea7f8fed.r2.dev/asldkfasdfsl.mp4'),
-        driveUrl: activeProject.driveUrl || (activeProject.video_url?.includes('drive.google.com') ? activeProject.video_url : 'https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view'),
-        version_label: activeProject.version_label || 'Cut v1.0'
-      });
-    }
+    syncUploadModalWithActiveProject();
   }, [activeProject?.id]);
+
+  const openUploadSourceModal = () => {
+    syncUploadModalWithActiveProject();
+    setShowUploadSourceModal(true);
+  };
+
+  const openNewProjectModal = () => {
+    setNewProjectForm({
+      title: '',
+      client_name: activeProject?.client_name || 'Sepand Studios',
+      version_label: 'Cut v1.0',
+      source_type: 'r2',
+      r2Url: DEMO_FALLBACK_MP4,
+      driveUrl:
+        'https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view',
+      deadline: '2026-11-20',
+      client_email: activeProject?.client_email || '',
+      client_whatsapp: activeProject?.client_whatsapp || ''
+    });
+    setShowNewProjectModal(true);
+  };
 
   const handleSwitchSourceMode = (targetMode) => {
     if (!activeProject) return;
@@ -420,8 +581,10 @@ export default function App() {
     setProjects((prev) =>
       prev.map((p) => {
         if (p.id !== activeProject.id) return p;
-        const nextR2 = p.r2Url || 'https://pub-5b8238b2b8084659bd705080ea7f8fed.r2.dev/asldkfasdfsl.mp4';
-        const nextDrive = p.driveUrl || 'https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view';
+        const nextR2 = p.r2Url || DEMO_FALLBACK_MP4;
+        const nextDrive =
+          p.driveUrl ||
+          'https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view';
         return {
           ...p,
           source_type: targetMode,
@@ -431,13 +594,57 @@ export default function App() {
         };
       })
     );
-    showToast(targetMode === 'r2' ? 'Switched to Cloudflare R2 Direct Stream' : 'Switched to Google Drive Preview Mode');
+    showToast(
+      targetMode === 'r2'
+        ? 'Switched to Cloudflare R2 Direct Stream'
+        : 'Switched to Google Drive Preview Mode'
+    );
+  };
+
+  // =========================================================================
+  // LOGO UPLOAD HANDLER (CONVERTS IMAGE FILE TO DATA URL FOR FAVICON & HEADER)
+  // =========================================================================
+  const handleLogoFileUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      showToast('Please select a logo image smaller than 2MB', 'error');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result;
+      if (typeof dataUrl === 'string') {
+        setSettings((prev) => ({ ...prev, studioLogo: dataUrl }));
+        showToast('Logo uploaded! Check the top header and browser tab icon.');
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // =========================================================================
+  // LOCAL VIDEO FILE SELECTION FOR INSTANT PREVIEW
+  // =========================================================================
+  const handleLocalVideoFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const blobUrl = URL.createObjectURL(file);
+    setSourceUpdateForm((prev) => ({
+      ...prev,
+      source_type: 'r2',
+      r2Url: blobUrl
+    }));
+    showToast(`Loaded local video file: ${file.name}`);
   };
 
   useEffect(() => {
     const handleKeyDown = (e) => {
       const tag = document.activeElement?.tagName?.toLowerCase();
-      const isTyping = tag === 'input' || tag === 'textarea' || tag === 'select' || document.activeElement?.isContentEditable;
+      const isTyping =
+        tag === 'input' ||
+        tag === 'textarea' ||
+        tag === 'select' ||
+        document.activeElement?.isContentEditable;
       if (isTyping) return;
 
       if (e.code === 'Space' && videoEngine.mode === 'r2') {
@@ -552,7 +759,8 @@ export default function App() {
   const handleAddMarker = (e) => {
     e.preventDefault();
     if (!newCommentText.trim() || !activeProject) return;
-    const stamp = lockedTimestamp !== null ? lockedTimestamp : Number(currentTime.toFixed(1));
+    const stamp =
+      lockedTimestamp !== null ? lockedTimestamp : Number(currentTime.toFixed(1));
 
     const createdMarker = {
       id: `m_${Date.now()}`,
@@ -585,15 +793,22 @@ export default function App() {
     const allResolved = projList.length > 0 && projList.every((m) => m.is_resolved);
 
     if (nextState && allResolved) {
-      showToast('100% Complete! Tab turned Green. Click NOTIFY CLIENT to send completion alert.', 'milestone');
+      showToast(
+        '100% Complete! Tab turned Green. Click NOTIFY CLIENT to send completion alert.',
+        'milestone'
+      );
     } else {
-      showToast(nextState ? 'Marked Fixed silently' : 'Re-opened note as Pending');
+      showToast(
+        nextState ? 'Marked Fixed silently' : 'Re-opened note as Pending'
+      );
     }
   };
 
   const handleSaveEditorReply = (markerId) => {
     setMarkers((prev) =>
-      prev.map((m) => (m.id === markerId ? { ...m, editor_reply: replyDraftText.trim() } : m))
+      prev.map((m) =>
+        m.id === markerId ? { ...m, editor_reply: replyDraftText.trim() } : m
+      )
     );
     setEditingReplyId(null);
     setReplyDraftText('');
@@ -615,18 +830,28 @@ export default function App() {
 
   const handleUpdateProjectSource = (e) => {
     e.preventDefault();
-    const cleanR2 = sourceUpdateForm.r2Url.trim() || activeProject?.r2Url || 'https://pub-5b8238b2b8084659bd705080ea7f8fed.r2.dev/asldkfasdfsl.mp4';
-    const cleanDrive = sourceUpdateForm.driveUrl.trim() || activeProject?.driveUrl || 'https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view';
+    const cleanR2 =
+      sourceUpdateForm.r2Url.trim() ||
+      activeProject?.r2Url ||
+      DEMO_FALLBACK_MP4;
+    const cleanDrive =
+      sourceUpdateForm.driveUrl.trim() ||
+      activeProject?.driveUrl ||
+      'https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view';
 
     setProjects((prev) =>
       prev.map((p) =>
         p.id === activeProject.id
           ? {
               ...p,
+              title: sourceUpdateForm.title.trim() || p.title,
+              client_name: sourceUpdateForm.client_name.trim() || p.client_name,
+              status_label: sourceUpdateForm.status_label.trim() || p.status_label,
               source_type: sourceUpdateForm.source_type,
               r2Url: cleanR2,
               driveUrl: cleanDrive,
-              video_url: sourceUpdateForm.source_type === 'gdrive' ? cleanDrive : cleanR2,
+              video_url:
+                sourceUpdateForm.source_type === 'gdrive' ? cleanDrive : cleanR2,
               version_label: sourceUpdateForm.version_label.trim() || p.version_label
             }
           : p
@@ -634,22 +859,29 @@ export default function App() {
     );
     setVideoError(false);
     setShowUploadSourceModal(false);
-    showToast(`Saved URLs & switched to ${sourceUpdateForm.source_type === 'gdrive' ? 'Google Drive Preview' : 'Cloudflare R2 Direct Stream'}`);
+    showToast(
+      `Updated project & switched to ${
+        sourceUpdateForm.source_type === 'gdrive'
+          ? 'Google Drive Preview'
+          : 'Cloudflare R2 Direct Stream'
+      }`
+    );
   };
 
   const handleCreateProject = (e) => {
     e.preventDefault();
-    if (!newProjectForm.title.trim()) return;
-
-    const cleanR2 = newProjectForm.r2Url.trim() || 'https://pub-5b8238b2b8084659bd705080ea7f8fed.r2.dev/asldkfasdfsl.mp4';
-    const cleanDrive = newProjectForm.driveUrl.trim() || 'https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view';
+    const cleanTitle = newProjectForm.title.trim() || `New Project ${projects.length + 1}`;
+    const cleanR2 = newProjectForm.r2Url.trim() || DEMO_FALLBACK_MP4;
+    const cleanDrive =
+      newProjectForm.driveUrl.trim() ||
+      'https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view';
 
     const nextNum = projects.length + 1;
     const created = {
       id: `proj_${Date.now()}`,
       tab_number: nextNum,
       tab_label: `Project ${nextNum}`,
-      title: newProjectForm.title.trim(),
+      title: cleanTitle,
       client_name: newProjectForm.client_name.trim() || 'Sepand Studios',
       version_label: newProjectForm.version_label.trim() || 'Cut v1.0',
       status_label: 'Status: In Revision / Fixing Notes',
@@ -657,7 +889,7 @@ export default function App() {
       r2Url: cleanR2,
       driveUrl: cleanDrive,
       video_url: newProjectForm.source_type === 'gdrive' ? cleanDrive : cleanR2,
-      deadline: newProjectForm.deadline,
+      deadline: newProjectForm.deadline || '2026-11-20',
       client_email: newProjectForm.client_email.trim(),
       client_whatsapp: newProjectForm.client_whatsapp.trim(),
       created_at: new Date().toISOString()
@@ -666,17 +898,6 @@ export default function App() {
     setProjects((prev) => [...prev, created]);
     setActiveProjectId(created.id);
     setShowNewProjectModal(false);
-    setNewProjectForm({
-      title: '',
-      client_name: 'Sepand Studios',
-      version_label: 'Cut v1.0',
-      source_type: 'r2',
-      r2Url: 'https://pub-5b8238b2b8084659bd705080ea7f8fed.r2.dev/asldkfasdfsl.mp4',
-      driveUrl: '',
-      deadline: '2026-11-20',
-      client_email: '',
-      client_whatsapp: ''
-    });
     showToast(`Created ${created.tab_label}: ${created.title}`);
   };
 
@@ -701,6 +922,15 @@ export default function App() {
     showToast('Project deleted successfully.');
   };
 
+  const handleResetDemoData = () => {
+    setProjects(INITIAL_PROJECTS);
+    setMarkers(INITIAL_MARKERS);
+    setSettings(DEFAULT_SETTINGS);
+    setActiveProjectId(INITIAL_PROJECTS[0].id);
+    setShowSettingsModal(false);
+    showToast('Reset all studio settings & projects to default');
+  };
+
   const getClientBookmarkLink = () => {
     const base = window.location.origin + window.location.pathname;
     return `${base}?view=client&project=${activeProject?.id || ''}`;
@@ -713,9 +943,13 @@ export default function App() {
 
   const openNotifyCenter = () => {
     const link = getClientBookmarkLink();
-    const statusHeader = activeStats.isComplete ? `✅ 100% COMPLETE — Ready for Final Sign-Off!` : `🎬 Revision Progress Update: ${activeStats.percent}% Complete`;
+    const statusHeader = activeStats.isComplete
+      ? `✅ 100% COMPLETE — Ready for Final Sign-Off!`
+      : `🎬 Revision Progress Update: ${activeStats.percent}% Complete`;
 
-    const summary = `${statusHeader}\n• Project: ${activeProject?.title} (${activeProject?.version_label})\n• Fixes Completed: ${activeStats.resolved} of ${activeStats.total} Fixed (${activeStats.pending} Open)\n• Deadline: ${formatDeadlineDisplay(activeProject?.deadline)}\n• Client Review Link: ${link}`;
+    const summary = `${statusHeader}\n• Project: ${activeProject?.title} (${activeProject?.version_label})\n• Fixes Completed: ${activeStats.resolved} of ${activeStats.total} Fixed (${activeStats.pending} Open)\n• Deadline: ${formatDeadlineDisplay(
+      activeProject?.deadline
+    )}\n• Client Review Link: ${link}`;
 
     setNotifyForm({
       clientEmail: activeProject?.client_email || '',
@@ -756,11 +990,21 @@ export default function App() {
       if (res.ok) {
         showToast(`Email update sent to ${notifyForm.clientEmail}!`);
       } else {
-        window.open(`mailto:${encodeURIComponent(notifyForm.clientEmail.trim())}?subject=${encodeURIComponent(`[DeepDox] ${activeProject?.title} — ${activeStats.percent}% Complete`)}&body=${encodeURIComponent(notifyForm.customMessage)}`, '_blank');
+        window.open(
+          `mailto:${encodeURIComponent(notifyForm.clientEmail.trim())}?subject=${encodeURIComponent(
+            `[${settings.studioName}] ${activeProject?.title} — ${activeStats.percent}% Complete`
+          )}&body=${encodeURIComponent(notifyForm.customMessage)}`,
+          '_blank'
+        );
         showToast('Opened Email Client with progress summary!');
       }
     } catch {
-      window.open(`mailto:${encodeURIComponent(notifyForm.clientEmail.trim())}?subject=${encodeURIComponent(`[DeepDox] ${activeProject?.title} — ${activeStats.percent}% Complete`)}&body=${encodeURIComponent(notifyForm.customMessage)}`, '_blank');
+      window.open(
+        `mailto:${encodeURIComponent(notifyForm.clientEmail.trim())}?subject=${encodeURIComponent(
+          `[${settings.studioName}] ${activeProject?.title} — ${activeStats.percent}% Complete`
+        )}&body=${encodeURIComponent(notifyForm.customMessage)}`,
+        '_blank'
+      );
       showToast('Opened Email Client with progress summary!');
     } finally {
       setIsSendingEmail(false);
@@ -770,7 +1014,9 @@ export default function App() {
   const handleSendWhatsAppNotification = () => {
     const cleanedPhone = (notifyForm.clientWhatsapp || '').replace(/[^0-9]/g, '');
     const encodedText = encodeURIComponent(notifyForm.customMessage);
-    const waUrl = cleanedPhone ? `https://wa.me/${cleanedPhone}?text=${encodedText}` : `https://wa.me/?text=${encodedText}`;
+    const waUrl = cleanedPhone
+      ? `https://wa.me/${cleanedPhone}?text=${encodedText}`
+      : `https://wa.me/?text=${encodedText}`;
     window.open(waUrl, '_blank', 'noopener,noreferrer');
     showToast('Opened WhatsApp with project progress & link!');
   };
@@ -790,17 +1036,27 @@ export default function App() {
   const activeAspectClass = useMemo(() => {
     if (videoAspectRatio === 'vertical') return 'aspect-[9/16] max-w-sm mx-auto';
     if (videoAspectRatio === 'horizontal') return 'aspect-video';
-    return detectedVideoAspect === 'vertical' ? 'aspect-[9/16] max-w-sm mx-auto' : 'aspect-video';
+    return detectedVideoAspect === 'vertical'
+      ? 'aspect-[9/16] max-w-sm mx-auto'
+      : 'aspect-video';
   }, [videoAspectRatio, detectedVideoAspect]);
 
   return (
-    <div className={`min-h-screen font-sans transition-colors duration-300 pb-16 ${
-      themeMode === 'dark' ? 'bg-[#0b0716] text-slate-100 selection:bg-purple-500 selection:text-white' : 'bg-[#f5f3fa] text-slate-800 selection:bg-purple-600 selection:text-white'
-    }`}>
+    <div
+      className={`min-h-screen font-sans transition-colors duration-300 pb-16 ${
+        themeMode === 'dark'
+          ? 'bg-[#0b0716] text-slate-100 selection:bg-purple-500 selection:text-white'
+          : 'bg-[#f5f3fa] text-slate-800 selection:bg-purple-600 selection:text-white'
+      }`}
+    >
+      {/* ===================================================================== */}
+      {/* HERO PURPLE GRADIENT HEADER WITH DOT MATRIX & CURVED SVG WAVE DIVIDER */}
+      {/* ===================================================================== */}
       <div
         className="relative overflow-hidden text-white pb-24 lg:pb-28"
         style={{
-          background: 'linear-gradient(135deg, #21094e 0%, #381078 40%, #6420aa 78%, #8338ec 100%)'
+          background:
+            'linear-gradient(135deg, #21094e 0%, #381078 40%, #6420aa 78%, #8338ec 100%)'
         }}
       >
         <DotMatrix className="absolute top-24 right-[36%] hidden md:grid" />
@@ -809,23 +1065,45 @@ export default function App() {
         <div className="absolute top-10 right-10 w-80 h-80 rounded-full bg-fuchsia-500/20 blur-3xl pointer-events-none" />
 
         <div className="relative z-10 max-w-[1380px] mx-auto px-4 sm:px-8 pt-5">
+          {/* ROW 1: CLICKABLE DEEPDOX LOGO BUTTON + THEME TOGGLE + VIEW TOGGLE */}
           <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-3.5">
-              <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-purple-400 via-fuchsia-500 to-indigo-600 p-0.5 shadow-lg shadow-purple-950/50">
-                <div className="w-full h-full bg-[#2a0f5d]/85 backdrop-blur-sm rounded-[14px] flex items-center justify-center">
-                  <Play className="w-5 h-5 text-white fill-white ml-0.5" />
+            <button
+              type="button"
+              onClick={() => {
+                if (!isStrictClientBookmark) {
+                  setShowSettingsModal(true);
+                }
+              }}
+              className="flex items-center gap-3.5 text-left group focus:outline-none"
+              title="Click to open Studio & Logo Settings"
+            >
+              <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-purple-400 via-fuchsia-500 to-indigo-600 p-0.5 shadow-lg shadow-purple-950/50 group-hover:scale-105 transition-transform">
+                <div className="w-full h-full bg-[#2a0f5d]/85 backdrop-blur-sm rounded-[14px] flex items-center justify-center overflow-hidden">
+                  {settings.studioLogo ? (
+                    <img
+                      src={settings.studioLogo}
+                      alt={settings.studioName}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <Play className="w-5 h-5 text-white fill-white ml-0.5" />
+                  )}
                 </div>
               </div>
               <div>
                 <div className="flex items-center gap-2.5">
-                  <span className="text-xl font-extrabold tracking-tight text-white">{settings.studioName}</span>
+                  <span className="text-xl font-extrabold tracking-tight text-white group-hover:text-purple-200 transition-colors">
+                    {settings.studioName}
+                  </span>
                   <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-white/15 text-purple-100 border border-white/20">
                     {settings.studioBadge}
                   </span>
                 </div>
-                <p className="text-xs text-purple-200/80 mt-0.5">{settings.studioSubName}</p>
+                <p className="text-xs text-purple-200/80 mt-0.5">
+                  {settings.studioSubName}
+                </p>
               </div>
-            </div>
+            </button>
 
             <div className="flex items-center gap-3">
               <button
@@ -833,14 +1111,22 @@ export default function App() {
                 onClick={() => {
                   const nextTheme = themeMode === 'light' ? 'dark' : 'light';
                   setThemeMode(nextTheme);
-                  showToast(`Switched to ${nextTheme === 'dark' ? 'Dark Theme 🌙' : 'Light Theme ☀️'}`);
+                  showToast(
+                    `Switched to ${nextTheme === 'dark' ? 'Dark Theme 🌙' : 'Light Theme ☀️'}`
+                  );
                 }}
                 className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/20 text-xs font-bold transition-all shadow-sm"
               >
                 {themeMode === 'light' ? (
-                  <><span>🌙</span><span>Dark Mode</span></>
+                  <>
+                    <span className="text-amber-300">🌙</span>
+                    <span>Dark Mode</span>
+                  </>
                 ) : (
-                  <><span>☀️</span><span>Light Mode</span></>
+                  <>
+                    <span className="text-amber-400">☀️</span>
+                    <span>Light Mode</span>
+                  </>
                 )}
               </button>
 
@@ -848,9 +1134,14 @@ export default function App() {
                 <div className="flex items-center bg-[#180736]/80 backdrop-blur-md p-1.5 rounded-full border border-white/15 shadow-inner">
                   <button
                     type="button"
-                    onClick={() => { setRole('editor'); showToast('Switched to Editor View'); }}
+                    onClick={() => {
+                      setRole('editor');
+                      showToast('Switched to Editor View');
+                    }}
                     className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-extrabold tracking-wide transition-all ${
-                      role === 'editor' ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md shadow-purple-500/40' : 'text-purple-200/75 hover:text-white'
+                      role === 'editor'
+                        ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md shadow-purple-500/40'
+                        : 'text-purple-200/75 hover:text-white'
                     }`}
                   >
                     <Sliders className="w-3.5 h-3.5" />
@@ -858,9 +1149,14 @@ export default function App() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => { setRole('client'); showToast('Switched to Client Workspace'); }}
+                    onClick={() => {
+                      setRole('client');
+                      showToast('Switched to Client Workspace');
+                    }}
                     className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-extrabold tracking-wide transition-all ${
-                      role === 'client' ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md shadow-purple-500/40' : 'text-purple-200/75 hover:text-white'
+                      role === 'client'
+                        ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md shadow-purple-500/40'
+                        : 'text-purple-200/75 hover:text-white'
                     }`}
                   >
                     <Eye className="w-3.5 h-3.5" />
@@ -876,6 +1172,7 @@ export default function App() {
             </div>
           </div>
 
+          {/* ROW 2: PROJECT SWITCHER TABS & ACTION BUTTONS */}
           <div className="mt-6 pb-5 border-b border-white/15 space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2">
@@ -886,7 +1183,7 @@ export default function App() {
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
-                {role === 'editor' && (
+                {!isStrictClientBookmark && (
                   <button
                     type="button"
                     onClick={() => setShowCloudflareGuideModal(true)}
@@ -906,10 +1203,10 @@ export default function App() {
                   <span>Bookmark Link</span>
                 </button>
 
-                {role === 'editor' && (
+                {!isStrictClientBookmark && (
                   <button
                     type="button"
-                    onClick={() => setShowUploadSourceModal(true)}
+                    onClick={openUploadSourceModal}
                     className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/20 text-xs font-bold transition-all"
                   >
                     <Upload className="w-3.5 h-3.5 text-purple-300" />
@@ -917,38 +1214,48 @@ export default function App() {
                   </button>
                 )}
 
-                {role === 'editor' && (
+                {!isStrictClientBookmark && (
                   <button
                     type="button"
                     onClick={openNotifyCenter}
                     className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-extrabold tracking-wide transition-all shadow-lg ${
-                      activeStats.isComplete ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-emerald-500/30' : 'bg-gradient-to-r from-purple-500 via-fuchsia-500 to-pink-500 hover:opacity-95 text-white shadow-fuchsia-500/30'
+                      activeStats.isComplete
+                        ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-emerald-500/30'
+                        : 'bg-gradient-to-r from-purple-500 via-fuchsia-500 to-pink-500 hover:opacity-95 text-white shadow-fuchsia-500/30'
                     }`}
                   >
                     <Send className="w-3.5 h-3.5" />
-                    <span>{activeStats.isComplete ? 'NOTIFY CLIENT (100%)' : 'NOTIFY CLIENT'}</span>
+                    <span>
+                      {activeStats.isComplete ? 'NOTIFY CLIENT (100%)' : 'NOTIFY CLIENT'}
+                    </span>
                   </button>
                 )}
 
-                {role === 'editor' && (
+                {!isStrictClientBookmark && (
                   <button
                     type="button"
                     onClick={() => setShowSettingsModal(true)}
-                    className="relative p-2 rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/20 transition-all"
+                    className="relative flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/20 text-xs font-bold transition-all"
+                    title="Studio & Logo Settings"
                   >
                     <Settings className="w-4 h-4" />
-                    <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-[#2a0f5d]" />
+                    <span>Settings</span>
+                    <span className="w-2 h-2 rounded-full bg-emerald-400" />
                   </button>
                 )}
               </div>
             </div>
 
+            {/* PROJECT SWITCHER CARDS */}
             <div className="flex items-stretch gap-3.5 overflow-x-auto pb-1.5 pt-1">
               {projects.map((proj, idx) => {
                 const isSelected = proj.id === activeProject?.id;
                 const stats = getProjectStats(proj.id);
                 const shortLabel = proj.tab_label || `Project ${idx + 1}`;
-                const cleanSubTitle = proj.title.split('—')[0].replace(/^Project \d+:\s*/i, '').trim();
+                const cleanSubTitle = proj.title
+                  .split('—')[0]
+                  .replace(/^Project \d+:\s*/i, '')
+                  .trim();
 
                 return (
                   <div
@@ -965,51 +1272,85 @@ export default function App() {
                     }`}
                   >
                     {isSelected && (
-                      <span className={`absolute -top-1.5 left-4 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest shadow ${
-                        stats.isComplete ? 'bg-slate-950 text-emerald-300' : 'bg-gradient-to-r from-fuchsia-500 to-purple-600 text-white'
-                      }`}>
+                      <span
+                        className={`absolute -top-1.5 left-4 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest shadow ${
+                          stats.isComplete
+                            ? 'bg-slate-950 text-emerald-300'
+                            : 'bg-gradient-to-r from-fuchsia-500 to-purple-600 text-white'
+                        }`}
+                      >
                         ACTIVE
                       </span>
                     )}
 
-                    <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 font-black text-sm shadow-inner ${
-                      stats.isComplete
-                        ? isSelected ? 'bg-slate-950/15 text-slate-950' : 'bg-emerald-400 text-slate-950'
-                        : isSelected ? 'bg-gradient-to-br from-purple-600 to-fuchsia-600 text-white shadow-md' : 'bg-white/10 text-purple-200 group-hover:bg-white/20'
-                    }`}>
-                      {stats.isComplete ? <CheckCircle2 className="w-6 h-6" /> : <Film className="w-5 h-5" />}
+                    <div
+                      className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 font-black text-sm shadow-inner ${
+                        stats.isComplete
+                          ? isSelected
+                            ? 'bg-slate-950/15 text-slate-950'
+                            : 'bg-emerald-400 text-slate-950'
+                          : isSelected
+                          ? 'bg-gradient-to-br from-purple-600 to-fuchsia-600 text-white shadow-md'
+                          : 'bg-white/10 text-purple-200 group-hover:bg-white/20'
+                      }`}
+                    >
+                      {stats.isComplete ? (
+                        <CheckCircle2 className="w-6 h-6" />
+                      ) : (
+                        <Film className="w-5 h-5" />
+                      )}
                     </div>
 
                     <div className="min-w-[135px] max-w-[200px]">
                       <div className="flex items-center gap-2">
-                        <span className="text-base font-black tracking-tight leading-none">{shortLabel}</span>
-                        <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-md ${
-                          stats.isComplete
-                            ? isSelected ? 'bg-slate-950/15 text-slate-950' : 'bg-emerald-400/30 text-emerald-200'
-                            : isSelected ? 'bg-purple-100 text-purple-800' : 'bg-white/10 text-purple-200'
-                        }`}>
+                        <span className="text-base font-black tracking-tight leading-none">
+                          {shortLabel}
+                        </span>
+                        <span
+                          className={`text-[10px] font-extrabold px-2 py-0.5 rounded-md ${
+                            stats.isComplete
+                              ? isSelected
+                                ? 'bg-slate-950/15 text-slate-950'
+                                : 'bg-emerald-400/30 text-emerald-200'
+                              : isSelected
+                              ? 'bg-purple-100 text-purple-800'
+                              : 'bg-white/10 text-purple-200'
+                          }`}
+                        >
                           {proj.version_label}
                         </span>
                       </div>
-                      <p className={`text-xs font-bold truncate mt-1 ${
-                        stats.isComplete
-                          ? isSelected ? 'text-slate-900' : 'text-emerald-100'
-                          : isSelected ? 'text-slate-600' : 'text-purple-200/85'
-                      }`}>
+                      <p
+                        className={`text-xs font-bold truncate mt-1 ${
+                          stats.isComplete
+                            ? isSelected
+                              ? 'text-slate-900'
+                              : 'text-emerald-100'
+                            : isSelected
+                            ? 'text-slate-600'
+                            : 'text-purple-200/85'
+                        }`}
+                      >
                         {cleanSubTitle}
                       </p>
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <div className={`px-3 py-1.5 rounded-xl text-xs font-black tracking-wide shrink-0 ${
-                        stats.isComplete
-                          ? isSelected ? 'bg-slate-950 text-emerald-400 shadow' : 'bg-emerald-400 text-slate-950 shadow'
-                          : isSelected ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30' : 'bg-black/30 text-purple-100 border border-white/10'
-                      }`}>
+                      <div
+                        className={`px-3 py-1.5 rounded-xl text-xs font-black tracking-wide shrink-0 ${
+                          stats.isComplete
+                            ? isSelected
+                              ? 'bg-slate-950 text-emerald-400 shadow'
+                              : 'bg-emerald-400 text-slate-950 shadow'
+                            : isSelected
+                            ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30'
+                            : 'bg-black/30 text-purple-100 border border-white/10'
+                        }`}
+                      >
                         {stats.isComplete ? '✓ 100%' : `${stats.percent}%`}
                       </div>
 
-                      {role === 'editor' && projects.length > 1 && (
+                      {!isStrictClientBookmark && projects.length > 1 && (
                         <button
                           type="button"
                           onClick={(e) => handleDeleteProject(e, proj.id)}
@@ -1024,10 +1365,10 @@ export default function App() {
                 );
               })}
 
-              {role === 'editor' && (
+              {!isStrictClientBookmark && (
                 <button
                   type="button"
-                  onClick={() => setShowNewProjectModal(true)}
+                  onClick={openNewProjectModal}
                   className="flex items-center gap-3 px-5 py-3.5 rounded-2xl bg-gradient-to-r from-fuchsia-500/30 to-purple-500/30 hover:from-fuchsia-500/45 hover:to-purple-500/45 text-white border-2 border-dashed border-fuchsia-300/70 hover:border-white text-sm font-black shrink-0 transition-all shadow-lg hover:scale-[1.02]"
                 >
                   <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center">
@@ -1035,13 +1376,16 @@ export default function App() {
                   </div>
                   <div className="text-left">
                     <span className="block text-sm font-black leading-tight">+ New Project</span>
-                    <span className="block text-[11px] font-semibold text-purple-200">Add video workspace</span>
+                    <span className="block text-[11px] font-semibold text-purple-200">
+                      Add video workspace
+                    </span>
                   </div>
                 </button>
               )}
             </div>
           </div>
 
+          {/* ROW 3: HERO TITLE & PROGRESS CARD */}
           <div className="mt-7 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
             <div className="lg:col-span-7 space-y-4">
               <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/10 border border-white/20 text-[11px] font-extrabold uppercase tracking-widest text-purple-200">
@@ -1076,7 +1420,7 @@ export default function App() {
                 <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/20 text-xs font-bold text-purple-100">
                   <Calendar className="w-3.5 h-3.5 text-amber-300" />
                   <span>Deadline:</span>
-                  {editingDeadline && role === 'editor' ? (
+                  {editingDeadline && !isStrictClientBookmark ? (
                     <span className="inline-flex items-center gap-1">
                       <input
                         type="date"
@@ -1084,15 +1428,26 @@ export default function App() {
                         onChange={(e) => handleUpdateDeadline(e.target.value)}
                         className="bg-[#1b083d] text-white text-xs rounded px-2 py-0.5 border border-purple-400 focus:outline-none"
                       />
-                      <button type="button" onClick={() => setEditingDeadline(false)} className="text-purple-200 hover:text-white">
+                      <button
+                        type="button"
+                        onClick={() => setEditingDeadline(false)}
+                        className="text-purple-200 hover:text-white"
+                      >
                         <X className="w-3.5 h-3.5" />
                       </button>
                     </span>
                   ) : (
                     <span className="inline-flex items-center gap-1.5">
-                      <strong className="text-white">{formatDeadlineDisplay(activeProject?.deadline)}</strong>
-                      {role === 'editor' && (
-                        <button type="button" onClick={() => setEditingDeadline(true)} className="text-amber-300 hover:text-white ml-0.5">
+                      <strong className="text-white">
+                        {formatDeadlineDisplay(activeProject?.deadline)}
+                      </strong>
+                      {!isStrictClientBookmark && (
+                        <button
+                          type="button"
+                          onClick={() => setEditingDeadline(true)}
+                          className="text-amber-300 hover:text-white ml-0.5"
+                          title="Edit Project Deadline"
+                        >
                           <Edit3 className="w-3 h-3" />
                         </button>
                       )}
@@ -1103,99 +1458,152 @@ export default function App() {
             </div>
 
             <div className="lg:col-span-5">
-              <div className={`rounded-3xl p-6 backdrop-blur-xl border transition-all shadow-2xl ${
-                activeStats.isComplete ? 'bg-emerald-500/20 border-emerald-300/50 shadow-emerald-950/30' : 'bg-white/10 border-white/20 shadow-purple-950/40'
-              }`}>
+              <div
+                className={`rounded-3xl p-6 backdrop-blur-xl border transition-all shadow-2xl ${
+                  activeStats.isComplete
+                    ? 'bg-emerald-500/20 border-emerald-300/50 shadow-emerald-950/30'
+                    : 'bg-white/10 border-white/20 shadow-purple-950/40'
+                }`}
+              >
                 <div className="flex items-start justify-between gap-4 mb-3">
                   <div>
-                    <span className="text-[10px] font-extrabold uppercase tracking-widest text-purple-200 block">LIVE REVISION PROGRESS</span>
+                    <span className="text-[10px] font-extrabold uppercase tracking-widest text-purple-200 block">
+                      LIVE REVISION PROGRESS
+                    </span>
                     <h2 className="text-lg sm:text-xl font-black text-white mt-0.5">
                       {activeStats.resolved} of {activeStats.total} Fixes Completed
                     </h2>
                   </div>
-                  <div className={`px-3.5 py-2 rounded-2xl text-sm font-black shadow-md transition-all ${
-                    activeStats.isComplete ? 'bg-emerald-400 text-slate-950' : 'bg-gradient-to-br from-fuchsia-500 to-purple-600 text-white border border-white/25'
-                  }`}>
+
+                  <div
+                    className={`px-3.5 py-2 rounded-2xl text-sm font-black shadow-md transition-all ${
+                      activeStats.isComplete
+                        ? 'bg-emerald-400 text-slate-950'
+                        : 'bg-gradient-to-br from-fuchsia-500 to-purple-600 text-white border border-white/25'
+                    }`}
+                  >
                     {activeStats.percent}%
                   </div>
                 </div>
 
                 <div className="w-full h-2.5 bg-[#1e0942]/80 rounded-full overflow-hidden mb-5 p-0.5">
-                  <div className={`h-full rounded-full transition-all duration-500 ${
-                    activeStats.isComplete ? 'bg-emerald-400' : 'bg-gradient-to-r from-pink-500 via-purple-400 to-emerald-400'
-                  }`} style={{ width: `${activeStats.percent}%` }} />
+                  <div
+                    className={`h-full rounded-full transition-all duration-500 ${
+                      activeStats.isComplete
+                        ? 'bg-emerald-400'
+                        : 'bg-gradient-to-r from-pink-500 via-purple-400 to-emerald-400'
+                    }`}
+                    style={{ width: `${activeStats.percent}%` }}
+                  />
                 </div>
 
                 <div className="grid grid-cols-3 gap-3 text-center">
                   <div className="rounded-2xl bg-white/10 border border-white/15 py-2.5 px-2">
-                    <span className="text-base font-black text-white block">{activeStats.total}</span>
-                    <span className="text-[9px] font-extrabold uppercase tracking-wider text-purple-200">TOTAL NOTES</span>
+                    <span className="text-base font-black text-white block">
+                      {activeStats.total}
+                    </span>
+                    <span className="text-[9px] font-extrabold uppercase tracking-wider text-purple-200">
+                      TOTAL NOTES
+                    </span>
                   </div>
+
                   <div className="rounded-2xl bg-emerald-400/20 border border-emerald-300/30 py-2.5 px-2">
-                    <span className="text-base font-black text-emerald-300 block">{activeStats.resolved}</span>
-                    <span className="text-[9px] font-extrabold uppercase tracking-wider text-emerald-200">FIXED (GREEN)</span>
+                    <span className="text-base font-black text-emerald-300 block">
+                      {activeStats.resolved}
+                    </span>
+                    <span className="text-[9px] font-extrabold uppercase tracking-wider text-emerald-200">
+                      FIXED (GREEN)
+                    </span>
                   </div>
+
                   <div className="rounded-2xl bg-amber-400/15 border border-amber-300/30 py-2.5 px-2">
-                    <span className="text-base font-black text-amber-200 block">{activeStats.pending}</span>
-                    <span className="text-[9px] font-extrabold uppercase tracking-wider text-amber-200">OPEN NOTES</span>
+                    <span className="text-base font-black text-amber-200 block">
+                      {activeStats.pending}
+                    </span>
+                    <span className="text-[9px] font-extrabold uppercase tracking-wider text-amber-200">
+                      OPEN NOTES
+                    </span>
                   </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-
-        <div className="absolute bottom-0 left-0 right-0 w-full overflow-hidden leading-none pointer-events-none">
-          <svg viewBox="0 0 1440 90" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-12 sm:h-16 lg:h-20 preserve-3d" preserveAspectRatio="none">
-            <path d="M0 40L80 45C160 50 320 60 480 55C640 50 800 30 960 22C1120 15 1280 20 1360 24L1440 28V90H1360C1280 90 1120 90 960 90C800 90 640 90 480 90C320 90 160 90 80 90H0V40Z" fill={themeMode === 'dark' ? '#0b0716' : '#f5f3fa'} />
-          </svg>
-        </div>
       </div>
 
+      {/* ===================================================================== */}
+      {/* WORKSPACE CARDS (VIDEO PLAYER + FEEDBACK NOTES)                       */}
+      {/* ===================================================================== */}
       <main className="relative z-20 max-w-[1380px] mx-auto px-4 sm:px-8 -mt-14 lg:-mt-16">
-        <div className={`mb-4 flex flex-wrap items-center justify-between gap-3 backdrop-blur-md px-4 py-2.5 rounded-2xl border shadow-sm transition-colors ${
-          themeMode === 'dark' ? 'bg-[#150d2c]/90 border-purple-900/50 text-slate-200' : 'bg-white/80 border-purple-100 text-slate-700'
-        }`}>
+        <div
+          className={`mb-4 flex flex-wrap items-center justify-between gap-3 backdrop-blur-md px-4 py-2.5 rounded-2xl border shadow-sm transition-colors ${
+            themeMode === 'dark'
+              ? 'bg-[#150d2c]/90 border-purple-900/50 text-slate-200'
+              : 'bg-white/80 border-purple-100 text-slate-700'
+          }`}
+        >
           <div className="flex items-center gap-2 text-xs font-extrabold">
             <Sliders className="w-4 h-4 text-purple-500" />
             <span>Workspace Controls:</span>
           </div>
+
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1 bg-black/10 dark:bg-white/10 p-1 rounded-xl">
               <button
                 type="button"
                 onClick={() => setVideoAspectRatio('auto')}
-                className={`p-1.5 rounded-lg text-xs font-extrabold transition-all ${videoAspectRatio === 'auto' ? 'bg-purple-600 text-white shadow-sm' : 'opacity-70 hover:opacity-100'}`}
+                className={`p-1.5 rounded-lg text-xs font-extrabold transition-all ${
+                  videoAspectRatio === 'auto'
+                    ? 'bg-purple-600 text-white shadow-sm'
+                    : 'opacity-70 hover:opacity-100'
+                }`}
               >
                 Auto
               </button>
               <button
                 type="button"
                 onClick={() => setVideoAspectRatio('horizontal')}
-                className={`p-1.5 rounded-lg transition-all ${videoAspectRatio === 'horizontal' ? 'bg-purple-600 text-white shadow-sm' : 'opacity-70 hover:opacity-100'}`}
+                className={`p-1.5 rounded-lg transition-all ${
+                  videoAspectRatio === 'horizontal'
+                    ? 'bg-purple-600 text-white shadow-sm'
+                    : 'opacity-70 hover:opacity-100'
+                }`}
               >
-                🖥️
+                🖥️ 16:9
               </button>
               <button
                 type="button"
                 onClick={() => setVideoAspectRatio('vertical')}
-                className={`p-1.5 rounded-lg transition-all ${videoAspectRatio === 'vertical' ? 'bg-purple-600 text-white shadow-sm' : 'opacity-70 hover:opacity-100'}`}
+                className={`p-1.5 rounded-lg transition-all ${
+                  videoAspectRatio === 'vertical'
+                    ? 'bg-purple-600 text-white shadow-sm'
+                    : 'opacity-70 hover:opacity-100'
+                }`}
               >
-                📱
+                📱 9:16
               </button>
             </div>
+
             <div className="flex items-center gap-1 bg-black/10 dark:bg-white/10 p-1 rounded-xl">
               <button
                 type="button"
                 onClick={() => setVideoLayoutMode('side-by-side')}
-                className={`p-1.5 rounded-lg transition-all ${videoLayoutMode === 'side-by-side' ? 'bg-purple-600 text-white shadow-sm' : 'opacity-70 hover:opacity-100'}`}
+                className={`p-1.5 rounded-lg text-xs font-bold transition-all ${
+                  videoLayoutMode === 'side-by-side'
+                    ? 'bg-purple-600 text-white shadow-sm'
+                    : 'opacity-70 hover:opacity-100'
+                }`}
               >
-                🔲
+                Side-by-Side
               </button>
               <button
                 type="button"
                 onClick={() => setVideoLayoutMode('top-bottom')}
-                className={`p-1.5 rounded-lg transition-all ${videoLayoutMode === 'top-bottom' ? 'bg-purple-600 text-white shadow-sm' : 'opacity-70 hover:opacity-100'}`}
+                className={`p-1.5 rounded-lg text-xs font-bold transition-all ${
+                  videoLayoutMode === 'top-bottom'
+                    ? 'bg-purple-600 text-white shadow-sm'
+                    : 'opacity-70 hover:opacity-100'
+                }`}
               >
                 Stacked
               </button>
@@ -1203,34 +1611,78 @@ export default function App() {
           </div>
         </div>
 
-        <div className={`grid gap-7 items-start ${videoLayoutMode === 'top-bottom' ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-12'}`}>
-          <div className={`${videoLayoutMode === 'top-bottom' ? 'w-full max-w-4xl mx-auto' : 'lg:col-span-8'} rounded-[28px] shadow-xl border p-4 sm:p-6 transition-all duration-300 ${
-            themeMode === 'dark' ? 'bg-[#150d2c] border-purple-900/60 shadow-purple-950/20 text-slate-100' : 'bg-white border-purple-100 shadow-purple-950/5 text-slate-800'
-          }`}>
-            <div className={`flex flex-wrap items-center justify-between gap-3 pb-4 mb-4 border-b ${themeMode === 'dark' ? 'border-purple-900/50' : 'border-slate-100'}`}>
+        <div
+          className={`grid gap-7 items-start ${
+            videoLayoutMode === 'top-bottom' ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-12'
+          }`}
+        >
+          <div
+            className={`${
+              videoLayoutMode === 'top-bottom' ? 'w-full max-w-4xl mx-auto' : 'lg:col-span-8'
+            } rounded-[28px] shadow-xl border p-4 sm:p-6 transition-all duration-300 ${
+              themeMode === 'dark'
+                ? 'bg-[#150d2c] border-purple-900/60 shadow-purple-950/20 text-slate-100'
+                : 'bg-white border-purple-100 shadow-purple-950/5 text-slate-800'
+            }`}
+          >
+            <div
+              className={`flex flex-wrap items-center justify-between gap-3 pb-4 mb-4 border-b ${
+                themeMode === 'dark' ? 'border-purple-900/50' : 'border-slate-100'
+              }`}
+            >
               <div className="flex flex-wrap items-center gap-2">
-                <div className={`inline-flex items-center p-1 rounded-full border ${themeMode === 'dark' ? 'bg-[#221345] border-purple-900' : 'bg-slate-100 border-slate-200'}`}>
+                <div
+                  className={`inline-flex items-center p-1 rounded-full border ${
+                    themeMode === 'dark'
+                      ? 'bg-[#221345] border-purple-900'
+                      : 'bg-slate-100 border-slate-200'
+                  }`}
+                >
                   <button
                     type="button"
                     onClick={() => handleSwitchSourceMode('r2')}
                     className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-extrabold transition-all ${
-                      videoEngine.mode === 'r2' ? 'bg-purple-600 text-white shadow-md shadow-purple-600/25' : themeMode === 'dark' ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-purple-700'
+                      videoEngine.mode === 'r2'
+                        ? 'bg-purple-600 text-white shadow-md shadow-purple-600/25'
+                        : themeMode === 'dark'
+                        ? 'text-slate-300 hover:text-white'
+                        : 'text-slate-600 hover:text-purple-700'
                     }`}
                   >
                     <Cloud className="w-3.5 h-3.5" />
                     <span>Cloudflare R2 Direct</span>
                   </button>
+
                   <button
                     type="button"
                     onClick={() => handleSwitchSourceMode('gdrive')}
                     className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-extrabold transition-all ${
-                      videoEngine.mode === 'gdrive' ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/25' : themeMode === 'dark' ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-amber-700'
+                      videoEngine.mode === 'gdrive'
+                        ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/25'
+                        : themeMode === 'dark'
+                        ? 'text-slate-300 hover:text-white'
+                        : 'text-slate-600 hover:text-amber-700'
                     }`}
                   >
                     <HardDrive className="w-3.5 h-3.5" />
                     <span>Google Drive Preview</span>
                   </button>
                 </div>
+
+                {!isStrictClientBookmark && (
+                  <button
+                    type="button"
+                    onClick={openUploadSourceModal}
+                    className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border text-xs font-extrabold transition-all ${
+                      themeMode === 'dark'
+                        ? 'bg-purple-950/60 hover:bg-purple-900 text-purple-200 border-purple-800'
+                        : 'bg-purple-50 hover:bg-purple-100 text-purple-700 border-purple-200'
+                    }`}
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>Edit Video / Upload Local File</span>
+                  </button>
+                )}
               </div>
             </div>
 
@@ -1283,104 +1735,194 @@ export default function App() {
                   )}
 
                   {videoError && (
-                    <div onClick={(e) => e.stopPropagation()} className="absolute inset-0 z-30 bg-[#0d0a1a]/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center text-white">
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      className="absolute inset-0 z-30 bg-[#0d0a1a]/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center cursor-default text-white"
+                    >
                       <AlertTriangle className="w-10 h-10 text-amber-400 mb-2" />
-                      <h4 className="text-sm font-extrabold mb-1">Stream Error or CORS Block</h4>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setProjects((prev) => prev.map((p) => p.id === activeProject.id ? { ...p, r2Url: DEMO_FALLBACK_MP4, video_url: DEMO_FALLBACK_MP4, source_type: 'r2' } : p));
-                          setVideoError(false);
-                          showToast('Loaded sample stream');
-                        }}
-                        className="px-3.5 py-2 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold mt-3"
-                      >
-                        Load Working Demo Stream
-                      </button>
+                      <h4 className="text-sm font-extrabold mb-1">
+                        Video Stream Unavailable or Needs Public Access
+                      </h4>
+                      <p className="text-xs text-purple-200 max-w-md mb-4 leading-relaxed">
+                        Could not stream{' '}
+                        <span className="font-mono text-amber-300 break-all">
+                          {videoEngine.streamUrl}
+                        </span>
+                      </p>
+                      <div className="flex flex-wrap items-center justify-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setProjects((prev) =>
+                              prev.map((p) =>
+                                p.id === activeProject.id
+                                  ? {
+                                      ...p,
+                                      r2Url: DEMO_FALLBACK_MP4,
+                                      video_url: DEMO_FALLBACK_MP4,
+                                      source_type: 'r2'
+                                    }
+                                  : p
+                              )
+                            );
+                            setVideoError(false);
+                            showToast('Loaded sample stream for testing');
+                          }}
+                          className="px-3.5 py-2 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold"
+                        >
+                          Load Demo Stream
+                        </button>
+                        <button
+                          type="button"
+                          onClick={openUploadSourceModal}
+                          className="px-3.5 py-2 rounded-full bg-purple-600 hover:bg-purple-500 text-white text-xs font-extrabold"
+                        >
+                          Change Video Source
+                        </button>
+                      </div>
                     </div>
                   )}
                 </>
               )}
             </div>
 
-            <div className="mt-4 pt-2 space-y-3">
-              {videoEngine.mode === 'r2' && (
-                <>
+            {videoEngine.mode === 'r2' && (
+              <div className="mt-4 pt-2 space-y-3">
+                <div
+                  ref={timelineRef}
+                  onClick={handleTimelineClick}
+                  className={`relative h-3 rounded-full cursor-pointer flex items-center border ${
+                    themeMode === 'dark'
+                      ? 'bg-purple-950/60 border-purple-900'
+                      : 'bg-slate-100 border-slate-200'
+                  }`}
+                >
                   <div
-                    ref={timelineRef}
-                    onClick={handleTimelineClick}
-                    className={`relative h-3 rounded-full cursor-pointer flex items-center border ${
-                      themeMode === 'dark' ? 'bg-purple-950/60 border-purple-900' : 'bg-slate-100 border-slate-200'
-                    }`}
-                  >
-                    <div
-                      className="absolute left-0 top-0 bottom-0 bg-gradient-to-r from-purple-500 to-fuchsia-600 rounded-full pointer-events-none"
-                      style={{ width: `${duration > 0 ? (currentTime / duration) * 100 : 0}%` }}
-                    />
-                    <div
-                      className="absolute w-4 h-4 rounded-full bg-white border-2 border-purple-600 shadow-md transform -translate-x-1/2 pointer-events-none"
-                      style={{ left: `${duration > 0 ? (currentTime / duration) * 100 : 0}%` }}
-                    />
-                    {projectMarkers.map((m) => {
-                      const pct = duration > 0 ? (m.timestamp_seconds / duration) * 100 : 0;
-                      return (
-                        <div
-                          key={m.id}
-                          onClick={(e) => { e.stopPropagation(); seekTo(m.timestamp_seconds); }}
-                          className={`absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full border-2 border-white shadow cursor-pointer transition-transform hover:scale-125 z-10 ${
-                            m.is_resolved ? 'bg-emerald-500' : 'bg-amber-500'
-                          }`}
-                          style={{ left: `${Math.min(100, Math.max(0, pct))}%` }}
-                        />
-                      );
-                    })}
+                    className="absolute left-0 top-0 bottom-0 bg-gradient-to-r from-purple-500 to-fuchsia-600 rounded-full pointer-events-none"
+                    style={{
+                      width: `${duration > 0 ? (currentTime / duration) * 100 : 0}%`
+                    }}
+                  />
+                  {projectMarkers.map((m) => {
+                    const pct = duration > 0 ? (m.timestamp_seconds / duration) * 100 : 0;
+                    return (
+                      <div
+                        key={m.id}
+                        title={`${m.category} at ${formatTimecode(m.timestamp_seconds)}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          seekTo(m.timestamp_seconds);
+                        }}
+                        className={`absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full border-2 border-white shadow cursor-pointer transition-transform hover:scale-125 z-10 ${
+                          m.is_resolved ? 'bg-emerald-500' : 'bg-amber-500'
+                        }`}
+                        style={{ left: `${Math.min(100, Math.max(0, pct))}%` }}
+                      />
+                    );
+                  })}
+                </div>
+
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={togglePlayPause}
+                      className="w-10 h-10 rounded-xl bg-purple-600 hover:bg-purple-500 text-white flex items-center justify-center shadow-md shadow-purple-600/30 transition-all"
+                    >
+                      {isPlaying ? (
+                        <Pause className="w-4 h-4" />
+                      ) : (
+                        <Play className="w-4 h-4 ml-0.5" />
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => skipSeconds(-3)}
+                      className={`p-2 rounded-xl transition-all ${
+                        themeMode === 'dark'
+                          ? 'bg-purple-950/60 hover:bg-purple-900 text-slate-200'
+                          : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                      }`}
+                    >
+                      <RotateCcw className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => skipSeconds(3)}
+                      className={`p-2 rounded-xl transition-all ${
+                        themeMode === 'dark'
+                          ? 'bg-purple-950/60 hover:bg-purple-900 text-slate-200'
+                          : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                      }`}
+                    >
+                      <RotateCw className="w-4 h-4" />
+                    </button>
+                    <span
+                      className={`text-xs font-mono font-bold ml-2 ${
+                        themeMode === 'dark' ? 'text-slate-300' : 'text-slate-700'
+                      }`}
+                    >
+                      {formatTimecode(currentTime, false)} / {formatTimecode(duration, false)}
+                    </span>
                   </div>
 
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={togglePlayPause}
-                        className="w-10 h-10 rounded-xl bg-purple-600 hover:bg-purple-500 text-white flex items-center justify-center shadow-md shadow-purple-600/30 transition-all"
-                      >
-                        {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
-                      </button>
-                      <button type="button" onClick={() => skipSeconds(-3)} className={`p-2 rounded-xl ${themeMode === 'dark' ? 'bg-purple-950/60 text-slate-200' : 'bg-slate-100 text-slate-700'}`}>
-                        <RotateCcw className="w-4 h-4" />
-                      </button>
-                      <button type="button" onClick={() => skipSeconds(3)} className={`p-2 rounded-xl ${themeMode === 'dark' ? 'bg-purple-950/60 text-slate-200' : 'bg-slate-100 text-slate-700'}`}>
-                        <RotateCw className="w-4 h-4" />
-                      </button>
-                      <span className={`text-xs font-mono font-bold ml-2 ${themeMode === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>
-                        {formatTimecode(currentTime, false)} / {formatTimecode(duration, false)}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <button type="button" onClick={() => setIsMuted(!isMuted)} className={`p-2 rounded-xl ${themeMode === 'dark' ? 'bg-purple-950/60 text-slate-200' : 'bg-slate-100 text-slate-700'}`}>
-                        {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-                      </button>
-                      <button type="button" onClick={toggleFullscreen} className={`p-2 rounded-xl ${themeMode === 'dark' ? 'bg-purple-950/60 text-slate-200' : 'bg-slate-100 text-slate-700'}`}>
-                        <Maximize className="w-4 h-4" />
-                      </button>
-                    </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsMuted(!isMuted)}
+                      className={`p-2 rounded-xl ${
+                        themeMode === 'dark'
+                          ? 'bg-purple-950/60 text-slate-200'
+                          : 'bg-slate-100 text-slate-700'
+                      }`}
+                    >
+                      {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={toggleFullscreen}
+                      className={`p-2 rounded-xl ${
+                        themeMode === 'dark'
+                          ? 'bg-purple-950/60 text-slate-200'
+                          : 'bg-slate-100 text-slate-700'
+                      }`}
+                    >
+                      <Maximize className="w-4 h-4" />
+                    </button>
                   </div>
-                </>
-              )}
-            </div>
+                </div>
+              </div>
+            )}
           </div>
 
-          <div className={`${videoLayoutMode === 'top-bottom' ? 'w-full max-w-4xl mx-auto' : 'lg:col-span-4'} space-y-5`}>
-            <div className={`h-[620px] rounded-[28px] shadow-xl border p-5 sm:p-6 flex flex-col transition-colors ${
-              themeMode === 'dark' ? 'bg-[#150d2c] border-purple-900/60 shadow-purple-950/20 text-slate-100' : 'bg-white border-purple-100 shadow-purple-950/5 text-slate-800'
-            }`}>
-              <div className={`flex flex-wrap items-start justify-between gap-2 pb-4 mb-4 border-b ${themeMode === 'dark' ? 'border-purple-900/50' : 'border-slate-100'}`}>
+          {/* RIGHT COLUMN: TIMESTAMP FEEDBACK NOTES */}
+          <div
+            className={`${
+              videoLayoutMode === 'top-bottom' ? 'w-full max-w-4xl mx-auto' : 'lg:col-span-4'
+            } space-y-5`}
+          >
+            <div
+              className={`h-[620px] rounded-[28px] shadow-xl border p-5 sm:p-6 flex flex-col transition-colors ${
+                themeMode === 'dark'
+                  ? 'bg-[#150d2c] border-purple-900/60 shadow-purple-950/20 text-slate-100'
+                  : 'bg-white border-purple-100 shadow-purple-950/5 text-slate-800'
+              }`}
+            >
+              <div
+                className={`flex flex-wrap items-start justify-between gap-2 pb-4 mb-4 border-b ${
+                  themeMode === 'dark' ? 'border-purple-900/50' : 'border-slate-100'
+                }`}
+              >
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-2xl bg-purple-100 text-purple-700 flex items-center justify-center shrink-0">
                     <MessageSquare className="w-4 h-4" />
                   </div>
                   <div>
-                    <h3 className={`text-sm font-black leading-tight ${themeMode === 'dark' ? 'text-slate-100' : 'text-slate-900'}`}>
+                    <h3
+                      className={`text-sm font-black leading-tight ${
+                        themeMode === 'dark' ? 'text-slate-100' : 'text-slate-900'
+                      }`}
+                    >
                       Timestamp Feedback Notes
                     </h3>
                     <span className="text-[11px] font-semibold text-slate-400">
@@ -1389,14 +1931,22 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className={`flex items-center p-1 rounded-full text-[11px] font-bold ${themeMode === 'dark' ? 'bg-[#221345]' : 'bg-slate-100'}`}>
+                <div
+                  className={`flex items-center p-1 rounded-full text-[11px] font-bold ${
+                    themeMode === 'dark' ? 'bg-[#221345]' : 'bg-slate-100'
+                  }`}
+                >
                   {['all', 'pending', 'resolved'].map((f) => (
                     <button
                       key={f}
                       type="button"
                       onClick={() => setMarkerFilter(f)}
                       className={`px-2.5 py-1 rounded-full capitalize transition-all ${
-                        markerFilter === f ? 'bg-purple-600 text-white shadow-sm' : themeMode === 'dark' ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-800'
+                        markerFilter === f
+                          ? 'bg-purple-600 text-white shadow-sm'
+                          : themeMode === 'dark'
+                          ? 'text-slate-400 hover:text-slate-200'
+                          : 'text-slate-500 hover:text-slate-800'
                       }`}
                     >
                       {f}
@@ -1406,16 +1956,25 @@ export default function App() {
               </div>
 
               {videoEngine.mode === 'r2' ? (
-                <form onSubmit={handleAddMarker} className={`flex items-center gap-2 pb-4 mb-4 border-b ${themeMode === 'dark' ? 'border-purple-900/50' : 'border-slate-100'}`}>
+                <form
+                  onSubmit={handleAddMarker}
+                  className={`flex items-center gap-2 pb-4 mb-4 border-b ${
+                    themeMode === 'dark' ? 'border-purple-900/50' : 'border-slate-100'
+                  }`}
+                >
                   <select
                     value={newCommentCategory}
                     onChange={(e) => setNewCommentCategory(e.target.value)}
                     className={`text-xs font-bold rounded-xl px-2.5 py-2.5 border focus:outline-none focus:border-purple-500 shrink-0 ${
-                      themeMode === 'dark' ? 'bg-[#221345] text-slate-200 border-purple-800' : 'bg-slate-50 text-slate-700 border-slate-200'
+                      themeMode === 'dark'
+                        ? 'bg-[#221345] text-slate-200 border-purple-800'
+                        : 'bg-slate-50 text-slate-700 border-slate-200'
                     }`}
                   >
                     {MARKER_CATEGORIES.map((c) => (
-                      <option key={c.label} value={c.label}>{c.label}</option>
+                      <option key={c.label} value={c.label}>
+                        {c.label}
+                      </option>
                     ))}
                   </select>
 
@@ -1427,7 +1986,9 @@ export default function App() {
                     onChange={(e) => setNewCommentText(e.target.value)}
                     placeholder={`Add note at ${formatTimecode(currentTime, false)}...`}
                     className={`flex-1 min-w-0 text-xs rounded-xl px-3 py-2.5 border focus:outline-none focus:border-purple-500 ${
-                      themeMode === 'dark' ? 'bg-[#221345] text-slate-100 border-purple-800' : 'bg-slate-50 text-slate-800 border-slate-200'
+                      themeMode === 'dark'
+                        ? 'bg-[#221345] text-slate-100 border-purple-800'
+                        : 'bg-slate-50 text-slate-800 border-slate-200'
                     }`}
                   />
 
@@ -1440,153 +2001,849 @@ export default function App() {
                 </form>
               ) : (
                 <div className="mb-4 p-3 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-800 text-center font-medium">
-                  Switch to <strong>Cloudflare R2 Direct Stream</strong> to post timecode notes.
+                  Switch to <strong>Cloudflare R2 Direct Stream</strong> to post frame-accurate
+                  timecode notes.
                 </div>
               )}
 
               <div className="flex-1 overflow-y-auto pr-1 space-y-3.5">
-                {filteredMarkers.length === 0 ? (
-                  <div className="text-center py-12 text-slate-400 text-xs space-y-2">
-                    <MessageSquare className="w-8 h-8 mx-auto opacity-30" />
-                    <p>No feedback notes in this view.</p>
-                  </div>
-                ) : (
-                  filteredMarkers.map((marker) => {
-                    const catStyle = MARKER_CATEGORIES.find((c) => c.label === marker.category)?.pill || MARKER_CATEGORIES[0].pill;
+                {filteredMarkers.map((marker) => {
+                  const catStyle =
+                    MARKER_CATEGORIES.find((c) => c.label === marker.category)?.pill ||
+                    MARKER_CATEGORIES[0].pill;
 
-                    return (
-                      <div
-                        key={marker.id}
-                        onClick={() => seekTo(marker.timestamp_seconds)}
-                        className={`p-4 rounded-2xl border transition-all cursor-pointer space-y-2.5 ${
-                          marker.is_resolved
-                            ? themeMode === 'dark' ? 'bg-emerald-950/30 border-emerald-800/60' : 'bg-emerald-50/50 border-emerald-200 hover:border-emerald-300'
-                            : themeMode === 'dark' ? 'bg-[#221345]/70 border-purple-900 hover:border-purple-700' : 'bg-white border-slate-200 hover:border-purple-300 shadow-sm'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2">
-                            <span className="px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 font-mono text-[11px] font-extrabold">
-                              {formatTimecode(marker.timestamp_seconds, true)}
-                            </span>
-                            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${catStyle}`}>
-                              {marker.category}
-                            </span>
-                          </div>
-
-                          <div className="flex items-center gap-1.5">
-                            {role === 'editor' ? (
-                              <button
-                                type="button"
-                                onClick={(e) => { e.stopPropagation(); handleToggleResolve(marker.id); }}
-                                className={`flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-extrabold transition-all ${
-                                  marker.is_resolved ? 'bg-emerald-500 text-white shadow-sm' : 'bg-amber-100 hover:bg-emerald-500 text-amber-900 hover:text-white border border-amber-300'
-                                }`}
-                              >
-                                <Check className="w-3 h-3" />
-                                <span>{marker.is_resolved ? 'Fixed ✓' : 'Mark Fixed'}</span>
-                              </button>
-                            ) : (
-                              <span className={`px-3 py-0.5 rounded-full text-[11px] font-extrabold ${marker.is_resolved ? 'bg-emerald-500 text-white' : 'bg-amber-100 text-amber-800 border border-amber-200'}`}>
-                                {marker.is_resolved ? 'Fixed ✓' : 'Pending'}
-                              </span>
-                            )}
-
-                            {role === 'editor' && (
-                              <button
-                                type="button"
-                                onClick={(e) => { e.stopPropagation(); handleDeleteMarker(marker.id); }}
-                                className="p-1 text-slate-400 hover:text-rose-400 transition-colors"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            )}
-                          </div>
+                  return (
+                    <div
+                      key={marker.id}
+                      onClick={() => seekTo(marker.timestamp_seconds)}
+                      className={`p-4 rounded-2xl border transition-all cursor-pointer space-y-2.5 ${
+                        marker.is_resolved
+                          ? themeMode === 'dark'
+                            ? 'bg-emerald-950/30 border-emerald-800/60'
+                            : 'bg-emerald-50/50 border-emerald-200'
+                          : themeMode === 'dark'
+                          ? 'bg-[#221345]/70 border-purple-900'
+                          : 'bg-white border-slate-200 shadow-sm'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 font-mono text-[11px] font-extrabold">
+                            {formatTimecode(marker.timestamp_seconds, true)}
+                          </span>
+                          <span
+                            className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${catStyle}`}
+                          >
+                            {marker.category}
+                          </span>
                         </div>
 
-                        <p className={`text-xs font-medium leading-relaxed ${themeMode === 'dark' ? 'text-slate-200' : 'text-slate-700'}`}>
-                          {marker.client_comment}
-                        </p>
-
-                        {marker.editor_reply ? (
-                          <div className={`border rounded-xl p-3 text-xs space-y-1 ${themeMode === 'dark' ? 'bg-purple-950/40 border-purple-900 text-slate-300' : 'bg-purple-50/80 border-purple-100 text-slate-600'}`}>
-                            <div className="flex items-center justify-between">
-                              <span className="font-extrabold text-purple-400 flex items-center gap-1 text-[11px]">
-                                <CornerDownRight className="w-3 h-3" />
-                                <span>Editor Reply:</span>
-                              </span>
-                              {role === 'editor' && (
-                                <button
-                                  type="button"
-                                  onClick={(e) => { e.stopPropagation(); setEditingReplyId(marker.id); setReplyDraftText(marker.editor_reply); }}
-                                  className="text-[11px] font-bold text-purple-400 hover:underline"
-                                >
-                                  Edit
-                                </button>
-                              )}
-                            </div>
-                            <p className="text-[11px] leading-relaxed">{marker.editor_reply}</p>
-                          </div>
-                        ) : (
-                          role === 'editor' && editingReplyId !== marker.id && (
+                        <div className="flex items-center gap-1.5">
+                          {role === 'editor' ? (
                             <button
                               type="button"
-                              onClick={(e) => { e.stopPropagation(); setEditingReplyId(marker.id); setReplyDraftText(''); }}
-                              className="text-[11px] font-bold text-purple-400 hover:text-purple-300 flex items-center gap-1 pt-0.5"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleToggleResolve(marker.id);
+                              }}
+                              className={`flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-extrabold transition-all ${
+                                marker.is_resolved
+                                  ? 'bg-emerald-500 text-white shadow-sm'
+                                  : 'bg-amber-100 hover:bg-emerald-500 text-amber-900 hover:text-white border border-amber-300'
+                              }`}
                             >
-                              <CornerDownRight className="w-3 h-3" />
-                              <span>Add Editor Reply...</span>
+                              <Check className="w-3 h-3" />
+                              <span>{marker.is_resolved ? 'Fixed ✓' : 'Mark Fixed'}</span>
                             </button>
-                          )
-                        )}
+                          ) : (
+                            <span
+                              className={`px-3 py-0.5 rounded-full text-[11px] font-extrabold ${
+                                marker.is_resolved
+                                  ? 'bg-emerald-500 text-white'
+                                  : 'bg-amber-100 text-amber-800 border border-amber-200'
+                              }`}
+                            >
+                              {marker.is_resolved ? 'Fixed ✓' : 'Pending'}
+                            </span>
+                          )}
 
-                        {role === 'editor' && editingReplyId === marker.id && (
-                          <div onClick={(e) => e.stopPropagation()} className={`pt-2 space-y-2 border-t ${themeMode === 'dark' ? 'border-purple-900' : 'border-slate-100'}`}>
-                            <input
-                              type="text"
-                              value={replyDraftText}
-                              onChange={(e) => setReplyDraftText(e.target.value)}
-                              placeholder="Type editor reply..."
-                              className={`w-full text-xs rounded-xl px-3 py-2 border border-purple-500 focus:outline-none ${themeMode === 'dark' ? 'bg-[#180e36] text-slate-100' : 'bg-slate-50 text-slate-800'}`}
-                            />
-                            <div className="flex justify-end gap-2">
-                              <button type="button" onClick={() => setEditingReplyId(null)} className="px-2.5 py-1 text-[11px] font-bold text-slate-400">Cancel</button>
-                              <button type="button" onClick={() => handleSaveEditorReply(marker.id)} className="px-3 py-1 rounded-lg bg-purple-600 text-white text-[11px] font-bold">Save</button>
-                            </div>
-                          </div>
-                        )}
+                          {role === 'editor' && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteMarker(marker.id);
+                              }}
+                              className="p-1 text-slate-400 hover:text-rose-400 transition-colors"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
                       </div>
-                    );
-                  })
-                )}
+
+                      <p
+                        className={`text-xs font-medium leading-relaxed ${
+                          themeMode === 'dark' ? 'text-slate-200' : 'text-slate-700'
+                        }`}
+                      >
+                        {marker.client_comment}
+                      </p>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
         </div>
       </main>
 
-      {/* Modal Placeholders for completeness */}
-      {showNotifyModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className={`rounded-3xl max-w-lg w-full p-6 shadow-2xl border space-y-5 ${themeMode === 'dark' ? 'bg-[#150d2c] border-purple-900 text-slate-100' : 'bg-white border-purple-100 text-slate-900'}`}>
-            <div className="flex items-center justify-between pb-3 border-b">
-              <h3 className="text-base font-black">Notify Client</h3>
-              <button type="button" onClick={() => setShowNotifyModal(false)}><X className="w-4 h-4" /></button>
+      {/* ===================================================================== */}
+      {/* MODAL 1: UPLOAD / SWITCH VIDEO SOURCE MODAL                           */}
+      {/* ===================================================================== */}
+      {showUploadSourceModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4">
+          <div
+            className={`rounded-3xl max-w-lg w-full p-6 shadow-2xl border max-h-[92vh] overflow-y-auto space-y-5 ${
+              themeMode === 'dark'
+                ? 'bg-[#150d2c] border-purple-900 text-slate-100'
+                : 'bg-white border-purple-100 text-slate-900'
+            }`}
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-purple-900">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-purple-100 text-purple-700 flex items-center justify-center">
+                  <Upload className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black">Upload / Switch Video & Project Info</h3>
+                  <p className="text-xs text-slate-400">{activeProject?.title}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowUploadSourceModal(false)}
+                className="p-1.5 rounded-full bg-slate-100 dark:bg-purple-900/50 text-slate-500 hover:text-rose-500"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
+
+            <form onSubmit={handleUpdateProjectSource} className="space-y-4 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-extrabold mb-1.5">Project Title</label>
+                  <input
+                    type="text"
+                    value={sourceUpdateForm.title}
+                    onChange={(e) =>
+                      setSourceUpdateForm({ ...sourceUpdateForm, title: e.target.value })
+                    }
+                    className={`w-full rounded-xl px-3.5 py-2.5 border focus:outline-none ${
+                      themeMode === 'dark'
+                        ? 'bg-[#221345] text-white border-purple-800'
+                        : 'bg-slate-50 text-slate-900 border-slate-200'
+                    }`}
+                  />
+                </div>
+                <div>
+                  <label className="block font-extrabold mb-1.5">Cut / Version Label</label>
+                  <input
+                    type="text"
+                    value={sourceUpdateForm.version_label}
+                    onChange={(e) =>
+                      setSourceUpdateForm({
+                        ...sourceUpdateForm,
+                        version_label: e.target.value
+                      })
+                    }
+                    placeholder="Cut v1.5"
+                    className={`w-full rounded-xl px-3.5 py-2.5 border focus:outline-none ${
+                      themeMode === 'dark'
+                        ? 'bg-[#221345] text-white border-purple-800'
+                        : 'bg-slate-50 text-slate-900 border-slate-200'
+                    }`}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-extrabold mb-1.5">Active Video Player Mode</label>
+                <div className="grid grid-cols-2 gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSourceUpdateForm({ ...sourceUpdateForm, source_type: 'r2' })
+                    }
+                    className={`py-2.5 px-3 rounded-xl font-extrabold border flex items-center justify-center gap-2 transition-all ${
+                      sourceUpdateForm.source_type === 'r2'
+                        ? 'bg-purple-600 text-white border-purple-500 shadow-md'
+                        : 'bg-slate-100 dark:bg-[#221345] text-slate-500 border-transparent'
+                    }`}
+                  >
+                    <Cloud className="w-4 h-4" />
+                    <span>Cloudflare R2 / Direct MP4</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSourceUpdateForm({ ...sourceUpdateForm, source_type: 'gdrive' })
+                    }
+                    className={`py-2.5 px-3 rounded-xl font-extrabold border flex items-center justify-center gap-2 transition-all ${
+                      sourceUpdateForm.source_type === 'gdrive'
+                        ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-md'
+                        : 'bg-slate-100 dark:bg-[#221345] text-slate-500 border-transparent'
+                    }`}
+                  >
+                    <HardDrive className="w-4 h-4" />
+                    <span>Google Drive Preview</span>
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="font-extrabold">
+                    Cloudflare R2 or Direct Video URL (.mp4)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => localVideoFileInputRef.current?.click()}
+                    className="text-purple-500 hover:underline font-extrabold flex items-center gap-1"
+                  >
+                    <Upload className="w-3 h-3" />
+                    <span>Or Pick Local .MP4 File</span>
+                  </button>
+                  <input
+                    ref={localVideoFileInputRef}
+                    type="file"
+                    accept="video/mp4,video/webm,video/quicktime"
+                    onChange={handleLocalVideoFileSelect}
+                    className="hidden"
+                  />
+                </div>
+                <input
+                  type="text"
+                  value={sourceUpdateForm.r2Url}
+                  onChange={(e) =>
+                    setSourceUpdateForm({ ...sourceUpdateForm, r2Url: e.target.value })
+                  }
+                  placeholder="https://pub-xxx.r2.dev/my-video.mp4"
+                  className={`w-full font-mono text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none ${
+                    themeMode === 'dark'
+                      ? 'bg-[#221345] text-white border-purple-800'
+                      : 'bg-white text-slate-900 border-purple-200'
+                  }`}
+                />
+              </div>
+
+              <div>
+                <label className="block font-extrabold mb-1.5">
+                  Google Drive Share Link (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={sourceUpdateForm.driveUrl}
+                  onChange={(e) =>
+                    setSourceUpdateForm({ ...sourceUpdateForm, driveUrl: e.target.value })
+                  }
+                  placeholder="https://drive.google.com/file/d/.../view"
+                  className={`w-full font-mono text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none ${
+                    themeMode === 'dark'
+                      ? 'bg-[#221345] text-white border-purple-800'
+                      : 'bg-white text-slate-900 border-purple-200'
+                  }`}
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowUploadSourceModal(false)}
+                  className="px-4 py-2 rounded-xl text-slate-400 hover:text-slate-600 font-bold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-extrabold shadow-md"
+                >
+                  Save & Switch Video
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ===================================================================== */}
+      {/* MODAL 2: CREATE NEW PROJECT WORKSPACE MODAL                           */}
+      {/* ===================================================================== */}
+      {showNewProjectModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4">
+          <div
+            className={`rounded-3xl max-w-lg w-full p-6 shadow-2xl border max-h-[92vh] overflow-y-auto space-y-4 ${
+              themeMode === 'dark'
+                ? 'bg-[#150d2c] border-purple-900 text-slate-100'
+                : 'bg-white border-purple-100 text-slate-900'
+            }`}
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-purple-900">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-purple-100 text-purple-700 flex items-center justify-center">
+                  <FolderPlus className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black">Create New Project Workspace</h3>
+                  <p className="text-xs text-slate-400">Adds a new project tab immediately</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowNewProjectModal(false)}
+                className="p-1.5 rounded-full bg-slate-100 dark:bg-purple-900/50 text-slate-500 hover:text-rose-500"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateProject} className="space-y-3.5 text-xs">
+              <div>
+                <label className="block font-bold mb-1">Project Title *</label>
+                <input
+                  type="text"
+                  required
+                  value={newProjectForm.title}
+                  onChange={(e) =>
+                    setNewProjectForm({ ...newProjectForm, title: e.target.value })
+                  }
+                  placeholder="e.g. Commercial VFX Pass — Final Cut"
+                  className={`w-full rounded-xl px-3.5 py-2.5 border ${
+                    themeMode === 'dark'
+                      ? 'bg-[#221345] text-white border-purple-800'
+                      : 'bg-slate-50 text-slate-900 border-slate-200'
+                  }`}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block font-bold mb-1">Client Name</label>
+                  <input
+                    type="text"
+                    value={newProjectForm.client_name}
+                    onChange={(e) =>
+                      setNewProjectForm({ ...newProjectForm, client_name: e.target.value })
+                    }
+                    className={`w-full rounded-xl px-3 py-2.5 border ${
+                      themeMode === 'dark'
+                        ? 'bg-[#221345] text-white border-purple-800'
+                        : 'bg-slate-50 text-slate-900 border-slate-200'
+                    }`}
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold mb-1">Cut Version</label>
+                  <input
+                    type="text"
+                    value={newProjectForm.version_label}
+                    onChange={(e) =>
+                      setNewProjectForm({
+                        ...newProjectForm,
+                        version_label: e.target.value
+                      })
+                    }
+                    className={`w-full rounded-xl px-3 py-2.5 border ${
+                      themeMode === 'dark'
+                        ? 'bg-[#221345] text-white border-purple-800'
+                        : 'bg-slate-50 text-slate-900 border-slate-200'
+                    }`}
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold mb-1">Deadline</label>
+                  <input
+                    type="date"
+                    value={newProjectForm.deadline}
+                    onChange={(e) =>
+                      setNewProjectForm({ ...newProjectForm, deadline: e.target.value })
+                    }
+                    className={`w-full rounded-xl px-3 py-2.5 border ${
+                      themeMode === 'dark'
+                        ? 'bg-[#221345] text-white border-purple-800'
+                        : 'bg-slate-50 text-slate-900 border-slate-200'
+                    }`}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold mb-1">Preferred Video Source</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setNewProjectForm({ ...newProjectForm, source_type: 'r2' })
+                    }
+                    className={`py-2 px-3 rounded-xl font-extrabold border flex items-center justify-center gap-1.5 ${
+                      newProjectForm.source_type === 'r2'
+                        ? 'bg-purple-600 text-white border-purple-500'
+                        : 'bg-slate-100 dark:bg-[#221345] text-slate-500 border-transparent'
+                    }`}
+                  >
+                    <Cloud className="w-3.5 h-3.5" />
+                    <span>Cloudflare R2 (.mp4)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setNewProjectForm({ ...newProjectForm, source_type: 'gdrive' })
+                    }
+                    className={`py-2 px-3 rounded-xl font-extrabold border flex items-center justify-center gap-1.5 ${
+                      newProjectForm.source_type === 'gdrive'
+                        ? 'bg-amber-500 text-slate-950 border-amber-400'
+                        : 'bg-slate-100 dark:bg-[#221345] text-slate-500 border-transparent'
+                    }`}
+                  >
+                    <HardDrive className="w-3.5 h-3.5" />
+                    <span>Google Drive</span>
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold mb-1">Cloudflare R2 Stream URL (.mp4)</label>
+                <input
+                  type="text"
+                  value={newProjectForm.r2Url}
+                  onChange={(e) =>
+                    setNewProjectForm({ ...newProjectForm, r2Url: e.target.value })
+                  }
+                  placeholder="https://...mp4"
+                  className={`w-full font-mono rounded-xl px-3.5 py-2.5 border ${
+                    themeMode === 'dark'
+                      ? 'bg-[#221345] text-white border-purple-800'
+                      : 'bg-slate-50 text-slate-900 border-slate-200'
+                  }`}
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold mb-1">Google Drive Share Link</label>
+                <input
+                  type="text"
+                  value={newProjectForm.driveUrl}
+                  onChange={(e) =>
+                    setNewProjectForm({ ...newProjectForm, driveUrl: e.target.value })
+                  }
+                  placeholder="https://drive.google.com/file/d/.../view"
+                  className={`w-full font-mono rounded-xl px-3.5 py-2.5 border ${
+                    themeMode === 'dark'
+                      ? 'bg-[#221345] text-white border-purple-800'
+                      : 'bg-slate-50 text-slate-900 border-slate-200'
+                  }`}
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowNewProjectModal(false)}
+                  className="px-4 py-2 rounded-xl text-slate-400 font-bold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-pink-500 text-white font-extrabold shadow-lg"
+                >
+                  Create Project
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ===================================================================== */}
+      {/* MODAL 3: STUDIO & BROWSER TAB LOGO SETTINGS MODAL                     */}
+      {/* ===================================================================== */}
+      {showSettingsModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4">
+          <div
+            className={`rounded-3xl max-w-lg w-full p-6 shadow-2xl border max-h-[92vh] overflow-y-auto space-y-5 ${
+              themeMode === 'dark'
+                ? 'bg-[#150d2c] border-purple-900 text-slate-100'
+                : 'bg-white border-purple-100 text-slate-900'
+            }`}
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-purple-900">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-purple-100 text-purple-700 flex items-center justify-center">
+                  <Settings className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black">Studio & Browser Tab Logo Settings</h3>
+                  <p className="text-xs text-slate-400">
+                    Customize branding, browser tab favicon, and editor details
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowSettingsModal(false)}
+                className="p-1.5 rounded-full bg-slate-100 dark:bg-purple-900/50 text-slate-400 hover:text-rose-500"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
             <div className="space-y-4 text-xs">
-              <button type="button" onClick={handleSendWhatsAppNotification} className="w-full py-3 rounded-xl bg-emerald-500 text-white font-extrabold">Send via WhatsApp</button>
-              <button type="button" onClick={handleSendEmailNotification} className="w-full py-3 rounded-xl bg-purple-600 text-white font-extrabold">Send via Email</button>
+              {/* LOGO UPLOAD FOR HEADER & BROWSER TAB FAVICON */}
+              <div
+                className={`p-4 rounded-2xl border space-y-3 ${
+                  themeMode === 'dark'
+                    ? 'bg-[#221345]/60 border-purple-800'
+                    : 'bg-purple-50/60 border-purple-200'
+                }`}
+              >
+                <label className="block font-extrabold text-sm">
+                  Studio Logo & Browser Tab Icon (Favicon)
+                </label>
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-2xl bg-[#2a0f5d] border-2 border-purple-400 flex items-center justify-center overflow-hidden shrink-0 shadow-md">
+                    {settings.studioLogo ? (
+                      <img
+                        src={settings.studioLogo}
+                        alt="Studio Logo"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <Play className="w-6 h-6 text-white fill-white ml-0.5" />
+                    )}
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => logoFileInputRef.current?.click()}
+                        className="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-extrabold flex items-center gap-1.5 shadow-sm"
+                      >
+                        <ImageIcon className="w-3.5 h-3.5" />
+                        <span>Upload Logo Image</span>
+                      </button>
+                      {settings.studioLogo && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSettings({ ...settings, studioLogo: '' });
+                            showToast('Reverted to default DeepDox icon');
+                          }}
+                          className="px-3 py-2 rounded-xl bg-rose-500/20 text-rose-400 hover:bg-rose-500 hover:text-white font-bold transition-all"
+                        >
+                          Remove Logo
+                        </button>
+                      )}
+                      <input
+                        ref={logoFileInputRef}
+                        type="file"
+                        accept="image/png,image/jpeg,image/svg+xml,image/webp,image/x-icon"
+                        onChange={handleLogoFileUpload}
+                        className="hidden"
+                      />
+                    </div>
+                    <p className="text-[11px] text-slate-400">
+                      Automatically updates both the top-left studio icon and the browser tab
+                      favicon!
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-bold mb-1">Or Paste Direct Logo Image URL</label>
+                  <input
+                    type="url"
+                    value={settings.studioLogo || ''}
+                    onChange={(e) =>
+                      setSettings({ ...settings, studioLogo: e.target.value })
+                    }
+                    placeholder="https://example.com/my-logo.png"
+                    className={`w-full font-mono rounded-xl px-3.5 py-2 border ${
+                      themeMode === 'dark'
+                        ? 'bg-[#150d2c] text-white border-purple-800'
+                        : 'bg-white text-slate-900 border-slate-200'
+                    }`}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold mb-1">Studio Name</label>
+                  <input
+                    type="text"
+                    value={settings.studioName}
+                    onChange={(e) =>
+                      setSettings({ ...settings, studioName: e.target.value })
+                    }
+                    className={`w-full rounded-xl px-3.5 py-2.5 border ${
+                      themeMode === 'dark'
+                        ? 'bg-[#221345] text-white border-purple-800'
+                        : 'bg-slate-50 text-slate-900 border-slate-200'
+                    }`}
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold mb-1">Studio Badge</label>
+                  <input
+                    type="text"
+                    value={settings.studioBadge}
+                    onChange={(e) =>
+                      setSettings({ ...settings, studioBadge: e.target.value })
+                    }
+                    className={`w-full rounded-xl px-3.5 py-2.5 border ${
+                      themeMode === 'dark'
+                        ? 'bg-[#221345] text-white border-purple-800'
+                        : 'bg-slate-50 text-slate-900 border-slate-200'
+                    }`}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold mb-1">Studio Subtitle</label>
+                <input
+                  type="text"
+                  value={settings.studioSubName}
+                  onChange={(e) =>
+                    setSettings({ ...settings, studioSubName: e.target.value })
+                  }
+                  className={`w-full rounded-xl px-3.5 py-2.5 border ${
+                    themeMode === 'dark'
+                      ? 'bg-[#221345] text-white border-purple-800'
+                      : 'bg-slate-50 text-slate-900 border-slate-200'
+                  }`}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold mb-1">Lead Editor Name</label>
+                  <input
+                    type="text"
+                    value={settings.editorName}
+                    onChange={(e) =>
+                      setSettings({ ...settings, editorName: e.target.value })
+                    }
+                    className={`w-full rounded-xl px-3.5 py-2.5 border ${
+                      themeMode === 'dark'
+                        ? 'bg-[#221345] text-white border-purple-800'
+                        : 'bg-slate-50 text-slate-900 border-slate-200'
+                    }`}
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold mb-1">Editor WhatsApp</label>
+                  <input
+                    type="text"
+                    value={settings.editorWhatsapp}
+                    onChange={(e) =>
+                      setSettings({ ...settings, editorWhatsapp: e.target.value })
+                    }
+                    className={`w-full rounded-xl px-3.5 py-2.5 border ${
+                      themeMode === 'dark'
+                        ? 'bg-[#221345] text-white border-purple-800'
+                        : 'bg-slate-50 text-slate-900 border-slate-200'
+                    }`}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-purple-900">
+              <button
+                type="button"
+                onClick={handleResetDemoData}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-rose-400 hover:bg-rose-500/10 text-xs font-bold"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>Reset Demo Data</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowSettingsModal(false);
+                  showToast('Studio settings & browser tab icon saved!');
+                }}
+                className="px-6 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-extrabold text-xs shadow-lg"
+              >
+                Save & Apply
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===================================================================== */}
+      {/* MODAL 4: NOTIFY CLIENT MODAL                                          */}
+      {/* ===================================================================== */}
+      {showNotifyModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4">
+          <div
+            className={`rounded-3xl max-w-lg w-full p-6 shadow-2xl border space-y-5 ${
+              themeMode === 'dark'
+                ? 'bg-[#150d2c] border-purple-900 text-slate-100'
+                : 'bg-white border-purple-100 text-slate-900'
+            }`}
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-purple-900">
+              <div className="flex items-center gap-3">
+                <div
+                  className={`w-10 h-10 rounded-2xl flex items-center justify-center ${
+                    activeStats.isComplete
+                      ? 'bg-emerald-500 text-white'
+                      : 'bg-purple-600 text-white'
+                  }`}
+                >
+                  <Send className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black">Notify Client</h3>
+                  <p className="text-xs text-slate-400">{activeProject?.title}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowNotifyModal(false)}
+                className="p-1.5 rounded-full bg-slate-100 dark:bg-purple-900/50 text-slate-400 hover:text-rose-500"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-4 text-xs">
+              <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-2.5">
+                <label className="flex items-center gap-1.5 font-extrabold text-emerald-900">
+                  <Phone className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>WhatsApp Progress & Review Link</span>
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={notifyForm.clientWhatsapp}
+                    onChange={(e) =>
+                      setNotifyForm({ ...notifyForm, clientWhatsapp: e.target.value })
+                    }
+                    placeholder="+15550192834"
+                    className="flex-1 bg-white text-slate-900 rounded-xl px-3.5 py-2.5 border border-emerald-300 focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleSendWhatsAppNotification}
+                    className="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold flex items-center gap-1.5 shrink-0 shadow-md"
+                  >
+                    <Phone className="w-3.5 h-3.5" />
+                    <span>WhatsApp</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-purple-50 border border-purple-200 space-y-2.5">
+                <label className="flex items-center gap-1.5 font-extrabold text-purple-900">
+                  <Mail className="w-3.5 h-3.5 text-purple-600" />
+                  <span>Client Email (via EmailJS)</span>
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="email"
+                    value={notifyForm.clientEmail}
+                    onChange={(e) =>
+                      setNotifyForm({ ...notifyForm, clientEmail: e.target.value })
+                    }
+                    placeholder="client@studio.com"
+                    className="flex-1 bg-white text-slate-900 rounded-xl px-3.5 py-2.5 border border-purple-300 focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    disabled={isSendingEmail}
+                    onClick={handleSendEmailNotification}
+                    className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-extrabold flex items-center gap-1.5 shrink-0 shadow-md"
+                  >
+                    <Mail className="w-3.5 h-3.5" />
+                    <span>{isSendingEmail ? 'Sending...' : 'Email'}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===================================================================== */}
+      {/* MODAL 5: CLOUDFLARE R2 GUIDE MODAL                                    */}
+      {/* ===================================================================== */}
+      {showCloudflareGuideModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4">
+          <div
+            className={`rounded-3xl max-w-lg w-full p-6 shadow-2xl border space-y-4 ${
+              themeMode === 'dark'
+                ? 'bg-[#150d2c] border-purple-900 text-slate-100'
+                : 'bg-white border-purple-100 text-slate-900'
+            }`}
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-purple-900">
+              <div className="flex items-center gap-2.5">
+                <Cloud className="w-5 h-5 text-amber-500" />
+                <h3 className="text-base font-black">Cloudflare R2 Direct Video Setup Guide</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowCloudflareGuideModal(false)}
+                className="p-1.5 rounded-full bg-slate-100 dark:bg-purple-900/50 text-slate-400 hover:text-rose-500"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <ol className="text-xs text-slate-400 space-y-2.5 list-decimal pl-4 leading-relaxed">
+              <li>Upload your `.mp4` master cut to your Cloudflare R2 bucket.</li>
+              <li>
+                In Cloudflare Dashboard → R2 → select bucket → Settings → enable Public Development
+                URL.
+              </li>
+              <li>
+                Copy the public link and paste it into <strong>+ Upload / Switch Video</strong>.
+              </li>
+            </ol>
+            <div className="flex justify-end pt-2">
+              <button
+                type="button"
+                onClick={() => setShowCloudflareGuideModal(false)}
+                className="px-5 py-2 rounded-xl bg-purple-600 text-white font-extrabold text-xs"
+              >
+                Got It
+              </button>
             </div>
           </div>
         </div>
       )}
 
       {toast && (
-        <div className="fixed bottom-5 right-5 z-50 px-4 py-3 rounded-2xl shadow-2xl border flex items-center gap-2.5 text-xs font-extrabold bg-[#21094e] text-white border-purple-400/40">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+        <div
+          className={`fixed bottom-5 right-5 z-50 px-4 py-3 rounded-2xl shadow-2xl border flex items-center gap-2.5 text-xs font-extrabold transition-all ${
+            toast.type === 'milestone'
+              ? 'bg-emerald-500 text-slate-950 border-emerald-300'
+              : 'bg-[#21094e] text-white border-purple-400/40'
+          }`}
+        >
+          <CheckCircle2
+            className={`w-4 h-4 shrink-0 ${
+              toast.type === 'milestone' ? 'text-slate-950' : 'text-emerald-400'
+            }`}
+          />
           <span>{toast.message}</span>
         </div>
       )}
     </div>
   );
-};
+}
