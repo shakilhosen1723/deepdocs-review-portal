@@ -3,23 +3,263 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+    color-scheme: light dark;
+  }
+  
   body {
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    font-family: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: #FFFFFF;
+    color: #0F172A;
   }
 }
 
-/* Custom Scrollbar for Studio Look */
+/* ==========================================================================
+   DUAL-ZONE AESTHETIC & THEME SYSTEM
+   1. Dark Navy Premium Top Zone (#101426)
+   2. Clean White Workspace (#FFFFFF / #F8F9FA)
+   ========================================================================== */
+
+/* Dark Navy Top Zone Background */
+.top-zone-navy {
+  background: linear-gradient(180deg, #0b0e1b 0%, #101426 65%, #0f1325 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Flowing Wave Ambient Backdrops */
+.ambient-wave-glow {
+  background: radial-gradient(ellipse at 85% 65%, rgba(249, 115, 22, 0.22) 0%, rgba(234, 88, 12, 0.08) 45%, transparent 70%);
+}
+
+.ambient-indigo-glow {
+  background: radial-gradient(circle at 40% 90%, rgba(99, 102, 241, 0.18) 0%, rgba(67, 56, 202, 0.08) 50%, transparent 80%);
+}
+
+.ambient-orange-flare {
+  background: radial-gradient(circle at 95% 95%, rgba(249, 115, 22, 0.28) 0%, rgba(234, 88, 12, 0.12) 40%, transparent 70%);
+}
+
+/* Lower Zone Clean White Workspace */
+.lower-zone-white {
+  background-color: #FFFFFF;
+}
+
+/* ==========================================================================
+   PILL-SHAPED TAB NAVIGATION CONTAINER
+   - 1. Video Review
+   - 2. Feedback & Revision Notes
+   - 3. Frame Annotations
+   - 4. Comparison (Conditional)
+   ========================================================================== */
+
+.pill-nav-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 4px 2px;
+}
+
+.pill-nav-tab-active {
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 4px 16px -2px rgba(234, 88, 12, 0.45), inset 0 1px 0 0 rgba(255, 255, 255, 0.4);
+  border-radius: 9999px;
+  padding: 8px 20px;
+  font-weight: 800;
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+}
+
+.pill-nav-tab-active:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px -3px rgba(234, 88, 12, 0.55);
+}
+
+.pill-nav-tab-inactive {
+  background: #FFFFFF;
+  color: #334155;
+  border: 1px solid #E2E8F0;
+  border-radius: 9999px;
+  padding: 8px 20px;
+  font-weight: 700;
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+}
+
+.pill-nav-tab-inactive:hover {
+  background: #F8FAFC;
+  color: #0F172A;
+  border-color: #CBD5E1;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(15, 23, 42, 0.08);
+}
+
+.dark .pill-nav-tab-inactive {
+  background: rgba(255, 255, 255, 0.06);
+  color: #CBD5E1;
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.dark .pill-nav-tab-inactive:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #FFFFFF;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* ==========================================================================
+   BUTTONS & TACTILE CONTROLS (Orange Gradients & Prominent Notify Button)
+   ========================================================================== */
+
+.btn-orange-gradient,
+.btn-primary-gradient,
+.btn-royal-primary {
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #FFFFFF;
+  box-shadow: 0 4px 18px -2px rgba(234, 88, 12, 0.45), inset 0 1px 0 0 rgba(255, 255, 255, 0.35);
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-orange-gradient:hover,
+.btn-primary-gradient:hover,
+.btn-royal-primary:hover {
+  background: linear-gradient(135deg, #fb923c 0%, #f97316 100%);
+  transform: translateY(-1.5px);
+  box-shadow: 0 8px 24px -3px rgba(234, 88, 12, 0.55), inset 0 1px 0 0 rgba(255, 255, 255, 0.4);
+}
+
+.btn-orange-gradient:active,
+.btn-primary-gradient:active,
+.btn-royal-primary:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+/* Prominent Peach/Orange Notify Client Button (Matching Reference) */
+.btn-notify-prominent {
+  background-color: #fed7aa;
+  color: #9a3412;
+  border: 1px solid rgba(251, 146, 60, 0.45);
+  box-shadow: 0 4px 16px -2px rgba(249, 115, 22, 0.35), inset 0 1px 0 0 rgba(255, 255, 255, 0.7);
+  font-weight: 800;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-notify-prominent:hover {
+  background-color: #fdba74;
+  transform: translateY(-1.5px);
+  box-shadow: 0 8px 24px -3px rgba(249, 115, 22, 0.5);
+}
+
+.btn-notify-prominent:active {
+  transform: translateY(1px);
+}
+
+/* Emerald Milestone Button */
+.btn-emerald-gradient {
+  background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 4px 18px -2px rgba(16, 185, 129, 0.4), inset 0 1px 0 0 rgba(255, 255, 255, 0.3);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-emerald-gradient:hover {
+  background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 25px -4px rgba(16, 185, 129, 0.5), inset 0 1px 0 0 rgba(255, 255, 255, 0.4);
+}
+
+/* Glass Pill Buttons */
+.btn-glass {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  transition: all 0.2s ease;
+}
+
+.btn-glass:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.22);
+  transform: translateY(-1px);
+}
+
+/* ==========================================================================
+   PROGRESS BAR VIBRANT ORANGE (Matching Reference Image)
+   ========================================================================== */
+
+.progress-bar-orange {
+  background: linear-gradient(90deg, #ea580c 0%, #f97316 100%);
+  box-shadow: 0 0 14px rgba(249, 115, 22, 0.65);
+}
+
+/* Timeline Track */
+.timeline-track {
+  background: rgba(15, 23, 42, 0.08);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  position: relative;
+  overflow: visible;
+}
+
+.dark .timeline-track {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.timeline-progress-fill {
+  background: linear-gradient(90deg, #ea580c 0%, #f97316 100%);
+  box-shadow: 0 0 16px rgba(249, 115, 22, 0.65);
+}
+
+/* Custom Scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
+
 ::-webkit-scrollbar-track {
-  background: #0f1219;
+  background: rgba(15, 23, 42, 0.04);
 }
+
 ::-webkit-scrollbar-thumb {
-  background: #3b0764;
-  border-radius: 3px;
+  background: rgba(249, 115, 22, 0.4);
+  border-radius: 6px;
+  transition: background 0.2s ease;
 }
+
 ::-webkit-scrollbar-thumb:hover {
-  background: #6b21a8;
+  background: rgba(234, 88, 12, 0.7);
+}
+
+/* Card Levitate Utility */
+.card-levitate {
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s ease;
+}
+
+.card-levitate:hover {
+  transform: translateY(-2px);
+}
+
+/* Toast spring bounce animation */
+@keyframes bounce-once {
+  0% { transform: translateY(16px) scale(0.96); opacity: 0; }
+  60% { transform: translateY(-3px) scale(1.02); opacity: 1; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+.animate-bounce-once {
+  animation: bounce-once 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
