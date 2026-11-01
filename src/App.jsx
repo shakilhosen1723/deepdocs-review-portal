@@ -421,9 +421,9 @@ export default function App() {
     const { url: cleanUrl, detectedType } = cleanAndEnhanceVideoUrl(url);
     if (!cleanUrl) return;
     const finalType = detectedType || sourceType;
+    const targetVerId = activeVersion?.id || activeProject?.active_version_id;
     appState.projects = appState.projects.map((p) => {
       if (p.id !== activeProject?.id) return p;
-      const targetVerId = activeVersion?.id || p.active_version_id;
       const updatedVersions = (p.versions || []).map((v) => {
         if (v.id === targetVerId) {
           return {
@@ -447,8 +447,9 @@ export default function App() {
       });
     });
     saveProjectsToStorage(appState.projects);
-    appState.selectVersion(activeVersion?.id || activeProject?.active_version_id);
+    appState.selectVersion(targetVerId, activeProject?.id);
     appState.pushToCloud(null, true);
+    appState.notify();
     showToast('Video URL saved, locked, and synced live across all client devices!');
   }, [activeProject?.id, activeVersion?.id, showToast]);
 
