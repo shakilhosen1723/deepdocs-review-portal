@@ -428,6 +428,63 @@ function formatDeadlineDisplay(dateString) {
   });
 }
 
+const STORAGE_TIME_KEY = 'deepdox_sync_timestamp_v7';
+const getStoredSyncTime = () => {
+  try {
+    return Number(localStorage.getItem(STORAGE_TIME_KEY) || 0);
+  } catch {
+    return 0;
+  }
+};
+const setStoredSyncTime = (time) => {
+  try {
+    localStorage.setItem(STORAGE_TIME_KEY, String(time));
+  } catch {}
+};
+
+const isFallbackDemo = (url) => {
+  if (!url || typeof url !== 'string') return true;
+  const u = url.trim();
+  return (
+    u === '' ||
+    u === DEMO_FALLBACK_MP4 ||
+    u.includes('sample/BigBuckBunny.mp4') ||
+    u.includes('sample/ForBiggerBlazes.mp4') ||
+    u.includes('asldkfasdfsl.mp4')
+  );
+};
+
+function cleanAndEnhanceVideoUrl(rawInput) {
+  if (!rawInput || typeof rawInput !== 'string') return { url: '', detectedType: 'r2' };
+  let url = rawInput.trim();
+  const mdMatch = url.match(/\((https?:\/\/[^\s)]+)\)/);
+  if (mdMatch) {
+    url = mdMatch[1];
+  } else {
+    url = url.replace(/^["'`]|["'`]$/g, '').trim();
+  }
+  let detectedType = 'r2';
+  if (url.includes('drive.google.com')) {
+    detectedType = 'gdrive';
+  } else if (url.includes('youtube.com') || url.includes('youtu.be')) {
+    detectedType = 'youtube';
+  }
+  return { url, detectedType };
+}
+
+function findProjectByIdOrTitle(projectsList, idOrTitle) {
+  if (!idOrTitle || !Array.isArray(projectsList) || projectsList.length === 0) {
+    return projectsList?.[0] || null;
+  }
+  const clean = String(idOrTitle).trim().toLowerCase();
+  return (
+    projectsList.find((p) => String(p.id).toLowerCase() === clean) ||
+    projectsList.find((p) => p.title && p.title.trim().toLowerCase() === clean) ||
+    projectsList.find((p) => p.tab_label && p.tab_label.trim().toLowerCase() === clean) ||
+    projectsList[0]
+  );
+}
+
 function saveProjectsToStorage(updatedProjects) {
   try {
     localStorage.setItem('deepdox_projects_v7', JSON.stringify(updatedProjects));
@@ -459,10 +516,13 @@ function normalizeProject(p, idx = 0) {
         : `Version ${vIdx + 1}`;
 
     // Preserve the user-provided video URL without reverting to demo
-    const r2Url =
-      v.r2Url && v.r2Url.trim() !== '' && !v.r2Url.includes('asldkfasdfsl.mp4')
-        ? v.r2Url.trim()
-        : (p.r2Url && !p.r2Url.includes('asldkfasdfsl.mp4') ? p.r2Url : DEMO_FALLBACK_MP4);
+    let r2Url = v.r2Url && v.r2Url.trim() !== '' ? v.r2Url.trim() : '';
+    if (isFallbackDemo(r2Url) && !isFallbackDemo(p.r2Url)) {
+      r2Url = p.r2Url.trim();
+    }
+    if (!r2Url) {
+      r2Url = DEMO_FALLBACK_MP4;
+    }
 
     return {
       ...v,
@@ -476,10 +536,19 @@ function normalizeProject(p, idx = 0) {
       ? p.active_version_id
       : versions[versions.length - 1]?.id || versions[0]?.id;
 
-  const activeVer = versions.find((v) => v.id === active_version_id) || versions[0];
+  const activeVer = versions.find((v) => v.id === active_version_id) || versions[versions.length - 1] || versions[0];
   const activeVerLabel = activeVer?.version_label || `Version ${versions.length}`;
   const activeSourceType = activeVer?.source_type || p.source_type || 'r2';
-  const activeR2 = (activeVer?.r2Url || p.r2Url || DEMO_FALLBACK_MP4).trim();
+
+  let activeR2 = activeVer?.r2Url || p.r2Url || '';
+  if (isFallbackDemo(activeR2) && !isFallbackDemo(p.r2Url)) {
+    activeR2 = p.r2Url;
+  }
+  if (!activeR2) {
+    activeR2 = DEMO_FALLBACK_MP4;
+  }
+  activeR2 = activeR2.trim();
+
   const activeDrive = activeVer?.driveUrl || p.driveUrl || '';
   const activeYoutube = activeVer?.youtubeUrl || p.youtubeUrl || '';
   const activeVideoUrl =
@@ -599,9 +668,9 @@ export default function App() {
       const urlTitle = p.get('title');
 
       if (urlVideo && urlVideo.trim() && !urlVideo.includes('asldkfasdfsl.mp4')) {
-        const cleanUrl = urlVideo.trim();
-        const targetProjId =
-          urlProjId && loaded.some((pr) => pr.id === urlProjId) ? urlProjId : loaded[0].id;
+        const { url: cleanUrl } = cleanAndEnhanceVideoUrl(urlVideo);
+        const targetProj = urlProjId ? findProjectByIdOrTitle(loaded, urlProjId) : loaded[0];
+        const targetProjId = targetProj ? targetProj.id : loaded[0]?.id;
         loaded = loaded.map((proj) => {
           if (proj.id !== targetProjId) return proj;
           const activeVerId = proj.active_version_id || proj.versions?.[0]?.id;
@@ -670,17 +739,23 @@ export default function App() {
   // URL PARAMETER SYNCHRONIZATION FOR CLIENT REVIEW LINKS
   const [activeProjectId, setActiveProjectId] = useState(() => {
     const urlProj = urlParams.get('project');
-    if (urlProj && projects.some((p) => p.id === urlProj)) {
-      return urlProj;
+    if (urlProj) {
+      const match = findProjectByIdOrTitle(projects, urlProj);
+      if (match) return match.id;
     }
     return projects[0]?.id || INITIAL_PROJECTS[0].id;
   });
 
-  // Keep activeProjectId synchronized if URL query parameter ?project=... changes
+  // Keep activeProjectId synchronized if URL query parameter ?project=... changes or remote projects arrive
   useEffect(() => {
     const urlProj = urlParams.get('project');
-    if (urlProj && projects.some((p) => p.id === urlProj) && activeProjectId !== urlProj) {
-      setActiveProjectId(urlProj);
+    if (urlProj && projects.length > 0) {
+      const match = findProjectByIdOrTitle(projects, urlProj);
+      if (match && activeProjectId !== match.id) {
+        setActiveProjectId(match.id);
+      }
+    } else if (projects.length > 0 && !projects.some((p) => p.id === activeProjectId)) {
+      setActiveProjectId(projects[0].id);
     }
   }, [urlParams, projects, activeProjectId]);
 
@@ -891,7 +966,7 @@ export default function App() {
   // SUPABASE TWO-WAY LIVE CLOUD SYNC (EDITOR <-> CLIENT ACROSS ALL DEVICES)
   // =========================================================================
   const [syncStatus, setSyncStatus] = useState('connecting'); // 'connecting' | 'live' | 'syncing' | 'error'
-  const lastSyncTimestampRef = useRef(0);
+  const lastSyncTimestampRef = useRef(getStoredSyncTime());
   const isApplyingRemoteRef = useRef(false);
   const hasLoadedInitialCloudRef = useRef(false);
 
@@ -915,11 +990,12 @@ export default function App() {
 
   // 1. Push Local State to Supabase
   const pushToSupabase = useCallback(
-    async (nextProjects, nextMarkers, nextSettings) => {
-      if (isApplyingRemoteRef.current || !hasLoadedInitialCloudRef.current) return;
+    async (nextProjects, nextMarkers, nextSettings, customTimestamp = null, force = false) => {
+      if (isApplyingRemoteRef.current && !force) return;
 
-      const now = Date.now();
-      lastSyncTimestampRef.current = now;
+      const now = customTimestamp || Date.now();
+      lastSyncTimestampRef.current = Math.max(lastSyncTimestampRef.current, now);
+      setStoredSyncTime(lastSyncTimestampRef.current);
       setSyncStatus('syncing');
 
       try {
@@ -977,22 +1053,58 @@ export default function App() {
         // If table is empty on first run, seed Supabase with current local data
         if (!Array.isArray(rows) || rows.length === 0) {
           hasLoadedInitialCloudRef.current = true;
-          await pushToSupabase(projectsRef.current, markersRef.current, settingsRef.current);
+          const now = Date.now();
+          lastSyncTimestampRef.current = now;
+          setStoredSyncTime(now);
+          await pushToSupabase(projectsRef.current, markersRef.current, settingsRef.current, now, true);
           return;
         }
 
         const remote = rows[0];
         hasLoadedInitialCloudRef.current = true;
 
+        const localTime = Math.max(lastSyncTimestampRef.current, getStoredSyncTime());
+
         // Apply remote state if it is newer than our local version
-        if (remote.updated_at && remote.updated_at > lastSyncTimestampRef.current) {
+        if (remote.updated_at && remote.updated_at > localTime) {
           isApplyingRemoteRef.current = true;
           lastSyncTimestampRef.current = remote.updated_at;
+          setStoredSyncTime(remote.updated_at);
 
           if (Array.isArray(remote.projects) && remote.projects.length > 0) {
-            const normalized = remote.projects.map(normalizeProject);
-            setProjects(normalized);
-            saveProjectsToStorage(normalized);
+            // Intelligent Merge: Never let remote demo video overwrite a valid local user video
+            const currentLocals = projectsRef.current || [];
+            const mergedProjects = remote.projects.map((remProj, idx) => {
+              const localProj = currentLocals.find((lp) => lp.id === remProj.id);
+              if (!localProj) return normalizeProject(remProj, idx);
+
+              const keepLocalR2 = !isFallbackDemo(localProj.r2Url) && isFallbackDemo(remProj.r2Url);
+              const keepLocalVideo = !isFallbackDemo(localProj.video_url) && isFallbackDemo(remProj.video_url);
+
+              const mergedVersions = (remProj.versions || []).map((remVer) => {
+                const localVer = localProj.versions?.find((lv) => lv.id === remVer.id);
+                if (!localVer) return remVer;
+                const keepVerR2 = !isFallbackDemo(localVer.r2Url) && isFallbackDemo(remVer.r2Url);
+                return {
+                  ...remVer,
+                  r2Url: keepVerR2 ? localVer.r2Url : remVer.r2Url,
+                  video_url: keepVerR2 ? localVer.r2Url : remVer.video_url
+                };
+              });
+
+              return normalizeProject(
+                {
+                  ...remProj,
+                  r2Url: keepLocalR2 ? localProj.r2Url : remProj.r2Url,
+                  video_url: keepLocalVideo ? localProj.video_url : remProj.video_url,
+                  versions: mergedVersions
+                },
+                idx
+              );
+            });
+
+            setProjects(mergedProjects);
+            saveProjectsToStorage(mergedProjects);
           }
 
           if (Array.isArray(remote.markers)) {
@@ -1007,6 +1119,9 @@ export default function App() {
           setTimeout(() => {
             isApplyingRemoteRef.current = false;
           }, 350);
+        } else if (localTime > (remote.updated_at || 0)) {
+          // Local state is newer than Supabase -> synchronize cloud so other devices receive it
+          await pushToSupabase(projectsRef.current, markersRef.current, settingsRef.current, localTime, true);
         }
 
         setSyncStatus('live');
@@ -1192,8 +1307,13 @@ export default function App() {
     const updated = projects.map((p) =>
       p.id === activeProject.id ? { ...p, title: titleDraft.trim() } : p
     );
-    setProjects(updated);
-    saveProjectsToStorage(updated);
+    const normalized = updated.map(normalizeProject);
+    setProjects(normalized);
+    saveProjectsToStorage(normalized);
+    const now = Date.now();
+    lastSyncTimestampRef.current = now;
+    setStoredSyncTime(now);
+    pushToSupabase(normalized, markersRef.current, settingsRef.current, now, true);
     setEditingTitle(false);
     showToast(`Updated project title to "${titleDraft.trim()}"`);
   };
@@ -1211,8 +1331,13 @@ export default function App() {
         versions: updatedVersions
       };
     });
-    setProjects(updated);
-    saveProjectsToStorage(updated);
+    const normalized = updated.map(normalizeProject);
+    setProjects(normalized);
+    saveProjectsToStorage(normalized);
+    const now = Date.now();
+    lastSyncTimestampRef.current = now;
+    setStoredSyncTime(now);
+    pushToSupabase(normalized, markersRef.current, settingsRef.current, now, true);
     setEditingVersion(false);
     showToast(`Updated active video label to "${versionDraft.trim()}"`);
   };
@@ -1221,8 +1346,13 @@ export default function App() {
     const updated = projects.map((p) =>
       p.id === activeProject.id ? { ...p, deadline: newDate } : p
     );
-    setProjects(updated);
-    saveProjectsToStorage(updated);
+    const normalized = updated.map(normalizeProject);
+    setProjects(normalized);
+    saveProjectsToStorage(normalized);
+    const now = Date.now();
+    lastSyncTimestampRef.current = now;
+    setStoredSyncTime(now);
+    pushToSupabase(normalized, markersRef.current, settingsRef.current, now, true);
     setEditingDeadline(false);
     showToast(`Deadline updated to ${formatDeadlineDisplay(newDate)}`);
   };
@@ -1252,8 +1382,14 @@ export default function App() {
           }
         : p
     );
-    setProjects(updated);
-    saveProjectsToStorage(updated);
+    const normalized = updated.map(normalizeProject);
+    setProjects(normalized);
+    saveProjectsToStorage(normalized);
+    const now = Date.now();
+    lastSyncTimestampRef.current = now;
+    setStoredSyncTime(now);
+    pushToSupabase(normalized, markersRef.current, settingsRef.current, now, true);
+
     setSelectedVersionFilter(verId);
     setCurrentTime(0);
     setIsPlaying(false);
@@ -1305,8 +1441,14 @@ export default function App() {
       };
     });
 
-    setProjects(updated);
-    saveProjectsToStorage(updated);
+    const normalized = updated.map(normalizeProject);
+    setProjects(normalized);
+    saveProjectsToStorage(normalized);
+    const now = Date.now();
+    lastSyncTimestampRef.current = now;
+    setStoredSyncTime(now);
+    pushToSupabase(normalized, markersRef.current, settingsRef.current, now, true);
+
     const modeNames = {
       r2: 'Cloudflare View (Direct MP4 Stream)',
       gdrive: 'Drive View (Google Preview)',
@@ -1319,21 +1461,23 @@ export default function App() {
     e.preventDefault();
     const nextVerIndex = (activeProject?.versions?.length || 0) + 1;
     const resolvedLabel = newVideoName.trim() || `Version ${nextVerIndex}`;
-    const cleanUrl = newVideoUrl.trim();
+    const { url: cleanUrl, detectedType } = cleanAndEnhanceVideoUrl(newVideoUrl.trim());
+    const finalType = detectedType || newVideoSourceType;
+
     const createdVer = {
       id: `ver_${Date.now()}`,
       version_label: resolvedLabel,
-      source_type: newVideoSourceType,
-      r2Url: newVideoSourceType === 'r2' ? cleanUrl || DEMO_FALLBACK_MP4 : '',
-      driveUrl: newVideoSourceType === 'gdrive' ? cleanUrl : '',
-      youtubeUrl: newVideoSourceType === 'youtube' ? cleanUrl : '',
+      source_type: finalType,
+      r2Url: finalType === 'r2' ? cleanUrl || DEMO_FALLBACK_MP4 : '',
+      driveUrl: finalType === 'gdrive' ? cleanUrl : '',
+      youtubeUrl: finalType === 'youtube' ? cleanUrl : '',
       created_at: new Date().toISOString()
     };
 
     const chosenUrl =
-      newVideoSourceType === 'youtube'
+      finalType === 'youtube'
         ? createdVer.youtubeUrl
-        : newVideoSourceType === 'gdrive'
+        : finalType === 'gdrive'
         ? createdVer.driveUrl
         : createdVer.r2Url;
 
@@ -1353,26 +1497,64 @@ export default function App() {
         : p
     );
 
-    setProjects(updated);
-    saveProjectsToStorage(updated);
+    const normalized = updated.map(normalizeProject);
+    setProjects(normalized);
+    saveProjectsToStorage(normalized);
     setNewVideoName('');
     setNewVideoUrl('');
     setShowUploadSourceModal(false);
     setSelectedVersionFilter(createdVer.id);
     setVideoError(false);
     setCurrentTime(0);
-    showToast(`Added new video: ${createdVer.version_label}`);
+
+    const now = Date.now();
+    lastSyncTimestampRef.current = now;
+    setStoredSyncTime(now);
+    pushToSupabase(normalized, markersRef.current, settingsRef.current, now, true);
+
+    showToast(`Added new video: ${createdVer.version_label} (Saved & Synced)`);
   };
 
   const handleDeleteVersion = (verId) => {
     if (!activeProject?.versions || activeProject.versions.length <= 1) {
-      showToast('Cannot delete the only video in this project.', 'error');
+      const shouldClear = window.confirm(
+        'This is the only video version. Do you want to clear/reset its video link so you can paste a new one?'
+      );
+      if (!shouldClear) return;
+
+      const updated = projects.map((p) => {
+        if (p.id !== activeProject.id) return p;
+        const updatedVersions = (p.versions || []).map((v) => ({
+          ...v,
+          r2Url: DEMO_FALLBACK_MP4,
+          driveUrl: '',
+          youtubeUrl: ''
+        }));
+        return {
+          ...p,
+          r2Url: DEMO_FALLBACK_MP4,
+          driveUrl: '',
+          youtubeUrl: '',
+          video_url: DEMO_FALLBACK_MP4,
+          versions: updatedVersions
+        };
+      });
+
+      const normalized = updated.map(normalizeProject);
+      setProjects(normalized);
+      saveProjectsToStorage(normalized);
+      const now = Date.now();
+      lastSyncTimestampRef.current = now;
+      setStoredSyncTime(now);
+      pushToSupabase(normalized, markersRef.current, settingsRef.current, now, true);
+      showToast('Video link cleared for this version');
       return;
     }
+
     const versionToDelete = activeProject.versions.find((v) => v.id === verId);
     const remaining = activeProject.versions.filter((v) => v.id !== verId);
     const newActiveId =
-      activeProject.active_version_id === verId ? remaining[0].id : activeProject.active_version_id;
+      activeProject.active_version_id === verId ? remaining[remaining.length - 1].id : activeProject.active_version_id;
     const targetVer = remaining.find((v) => v.id === newActiveId);
     const targetUrl =
       targetVer?.source_type === 'youtube'
@@ -1397,23 +1579,32 @@ export default function App() {
         : p
     );
 
-    setProjects(updated);
-    saveProjectsToStorage(updated);
+    const normalized = updated.map(normalizeProject);
+    setProjects(normalized);
+    saveProjectsToStorage(normalized);
 
     // Clean up markers specific to the deleted version
-    setMarkers((prev) => prev.filter((m) => m.version_id !== verId));
+    const updatedMarkers = markers.filter((m) => m.version_id !== verId);
+    setMarkers(updatedMarkers);
+    localStorage.setItem('deepdox_markers_v7', JSON.stringify(updatedMarkers));
 
     if (selectedVersionFilter === verId) {
       setSelectedVersionFilter('all');
     }
 
-    showToast(`Deleted video "${versionToDelete?.version_label || 'version'}"`);
+    const now = Date.now();
+    lastSyncTimestampRef.current = now;
+    setStoredSyncTime(now);
+    pushToSupabase(normalized, updatedMarkers, settingsRef.current, now, true);
+
+    showToast(`Deleted video "${versionToDelete?.version_label || 'version'}" (Synced)`);
   };
 
   const handleQuickSaveVideoLink = (url, sourceType = 'r2') => {
-    const cleanUrl = url.trim();
+    const { url: cleanUrl, detectedType } = cleanAndEnhanceVideoUrl(url);
     if (!cleanUrl) return;
 
+    const finalType = detectedType || sourceType;
     const targetVerId = activeVersion?.id || activeProject?.active_version_id || activeProject?.versions?.[0]?.id;
 
     const updated = projects.map((p) => {
@@ -1422,10 +1613,10 @@ export default function App() {
         if (v.id === targetVerId) {
           return {
             ...v,
-            source_type: sourceType,
-            r2Url: sourceType === 'r2' ? cleanUrl : v.r2Url,
-            driveUrl: sourceType === 'gdrive' ? cleanUrl : v.driveUrl,
-            youtubeUrl: sourceType === 'youtube' ? cleanUrl : v.youtubeUrl
+            source_type: finalType,
+            r2Url: finalType === 'r2' ? cleanUrl : v.r2Url,
+            driveUrl: finalType === 'gdrive' ? cleanUrl : v.driveUrl,
+            youtubeUrl: finalType === 'youtube' ? cleanUrl : v.youtubeUrl
           };
         }
         return v;
@@ -1433,31 +1624,39 @@ export default function App() {
 
       return {
         ...p,
-        source_type: sourceType,
-        r2Url: sourceType === 'r2' ? cleanUrl : p.r2Url,
-        driveUrl: sourceType === 'gdrive' ? cleanUrl : p.driveUrl,
-        youtubeUrl: sourceType === 'youtube' ? cleanUrl : p.youtubeUrl,
+        source_type: finalType,
+        r2Url: finalType === 'r2' ? cleanUrl : p.r2Url,
+        driveUrl: finalType === 'gdrive' ? cleanUrl : p.driveUrl,
+        youtubeUrl: finalType === 'youtube' ? cleanUrl : p.youtubeUrl,
         video_url: cleanUrl,
         active_version_id: targetVerId,
         versions: updatedVersions
       };
     });
 
-    setProjects(updated);
-    saveProjectsToStorage(updated);
+    const normalized = updated.map(normalizeProject);
+    setProjects(normalized);
+    saveProjectsToStorage(normalized);
     setVideoError(false);
     setCurrentTime(0);
+
+    const now = Date.now();
+    lastSyncTimestampRef.current = now;
+    setStoredSyncTime(now);
 
     // Sync active video to URL parameters so page refreshes never lose the link
     try {
       const currentUrl = new URL(window.location.href);
       currentUrl.searchParams.set('project', activeProject?.id || 'proj_1');
       currentUrl.searchParams.set('video', cleanUrl);
-      currentUrl.searchParams.set('type', sourceType);
+      currentUrl.searchParams.set('type', finalType);
       window.history.replaceState({}, '', currentUrl.toString());
     } catch {}
 
-    showToast(`Video URL saved and locked to ${activeVersion?.version_label || 'active video'}!`);
+    // INSTANT PUSH TO SUPABASE CLOUD (Cross-device sync without debounce delay)
+    pushToSupabase(normalized, markersRef.current, settingsRef.current, now, true);
+
+    showToast(`Video URL saved, locked, and synced live across all client devices!`);
   };
 
   // POINT 12: 1-SECOND SKIP PRECISION
@@ -1808,7 +2007,14 @@ export default function App() {
       created_at: new Date().toISOString()
     };
 
-    setMarkers((prev) => [...prev, createdMarker]);
+    const updatedMarkers = [...markers, createdMarker];
+    setMarkers(updatedMarkers);
+    localStorage.setItem('deepdox_markers_v7', JSON.stringify(updatedMarkers));
+    const now = Date.now();
+    lastSyncTimestampRef.current = now;
+    setStoredSyncTime(now);
+    pushToSupabase(projectsRef.current, updatedMarkers, settingsRef.current, now, true);
+
     setNewCommentText('');
     setNewCommentAttachment(null);
     setNewCommentAttachmentName(null);
@@ -1816,7 +2022,7 @@ export default function App() {
     setIsEditingTimecode(false);
     setIsDrawingMode(false);
     clearCanvas();
-    showToast(`Feedback note posted for ${createdMarker.version_label} at ${formatTimecode(createdMarker.timestamp_seconds)}`);
+    showToast(`Feedback note posted for ${createdMarker.version_label} at ${formatTimecode(createdMarker.timestamp_seconds)} (Synced)`);
   };
 
   // Clicking a marker jumps to timecode & renders saved canvas drawing
@@ -1852,6 +2058,12 @@ export default function App() {
       m.id === markerId ? { ...m, is_resolved: nextState } : m
     );
     setMarkers(updatedMarkers);
+    localStorage.setItem('deepdox_markers_v7', JSON.stringify(updatedMarkers));
+
+    const now = Date.now();
+    lastSyncTimestampRef.current = now;
+    setStoredSyncTime(now);
+    pushToSupabase(projectsRef.current, updatedMarkers, settingsRef.current, now, true);
 
     const projList = updatedMarkers.filter((m) => m.project_id === activeProject?.id);
     const allResolved = projList.length > 0 && projList.every((m) => m.is_resolved);
@@ -1872,35 +2084,52 @@ export default function App() {
   };
 
   const handleSaveEditorReply = (markerId) => {
-    setMarkers((prev) =>
-      prev.map((m) =>
-        m.id === markerId ? { ...m, editor_reply: replyDraftText.trim() } : m
-      )
+    const updatedMarkers = markers.map((m) =>
+      m.id === markerId ? { ...m, editor_reply: replyDraftText.trim() } : m
     );
+    setMarkers(updatedMarkers);
+    localStorage.setItem('deepdox_markers_v7', JSON.stringify(updatedMarkers));
+    const now = Date.now();
+    lastSyncTimestampRef.current = now;
+    setStoredSyncTime(now);
+    pushToSupabase(projectsRef.current, updatedMarkers, settingsRef.current, now, true);
+
     setEditingReplyId(null);
     setReplyDraftText('');
-    showToast('Editor reply saved!');
+    showToast('Editor reply saved! (Synced)');
   };
 
   const handleDeleteEditorReply = (markerId) => {
-    setMarkers((prev) =>
-      prev.map((m) => (m.id === markerId ? { ...m, editor_reply: '' } : m))
+    const updatedMarkers = markers.map((m) =>
+      m.id === markerId ? { ...m, editor_reply: '' } : m
     );
-    showToast('Editor reply cleared');
+    setMarkers(updatedMarkers);
+    localStorage.setItem('deepdox_markers_v7', JSON.stringify(updatedMarkers));
+    const now = Date.now();
+    lastSyncTimestampRef.current = now;
+    setStoredSyncTime(now);
+    pushToSupabase(projectsRef.current, updatedMarkers, settingsRef.current, now, true);
+
+    showToast('Editor reply cleared (Synced)');
   };
 
   const handleDeleteMarker = (markerId) => {
-    setMarkers((prev) => prev.filter((m) => m.id !== markerId));
-    showToast('Feedback note removed');
+    const updatedMarkers = markers.filter((m) => m.id !== markerId);
+    setMarkers(updatedMarkers);
+    localStorage.setItem('deepdox_markers_v7', JSON.stringify(updatedMarkers));
+    const now = Date.now();
+    lastSyncTimestampRef.current = now;
+    setStoredSyncTime(now);
+    pushToSupabase(projectsRef.current, updatedMarkers, settingsRef.current, now, true);
+
+    showToast('Feedback note removed (Synced)');
   };
 
   // SWITCHING SOURCE TYPES IN ACTIVE VERSION
   const handleUpdateProjectSource = (e) => {
     e.preventDefault();
-    const cleanR2 =
-      sourceUpdateForm.r2Url.trim() ||
-      activeVersion?.r2Url ||
-      DEMO_FALLBACK_MP4;
+    const { url: cleanR2 } = cleanAndEnhanceVideoUrl(sourceUpdateForm.r2Url.trim());
+    const finalR2 = cleanR2 || activeVersion?.r2Url || activeProject?.r2Url || DEMO_FALLBACK_MP4;
     const cleanDrive =
       sourceUpdateForm.driveUrl.trim() ||
       activeVersion?.driveUrl ||
@@ -1914,7 +2143,7 @@ export default function App() {
         ? cleanYoutube
         : sourceUpdateForm.source_type === 'gdrive'
         ? cleanDrive
-        : cleanR2;
+        : finalR2;
 
     const updated = projects.map((p) => {
       if (p.id !== activeProject?.id) return p;
@@ -1923,7 +2152,7 @@ export default function App() {
           return {
             ...v,
             source_type: sourceUpdateForm.source_type,
-            r2Url: cleanR2,
+            r2Url: finalR2,
             driveUrl: cleanDrive,
             youtubeUrl: cleanYoutube,
             version_label: sourceUpdateForm.version_label.trim() || v.version_label
@@ -1938,7 +2167,7 @@ export default function App() {
         client_name: sourceUpdateForm.client_name.trim() || p.client_name,
         status_label: sourceUpdateForm.status_label.trim() || p.status_label,
         source_type: sourceUpdateForm.source_type,
-        r2Url: cleanR2,
+        r2Url: finalR2,
         driveUrl: cleanDrive,
         youtubeUrl: cleanYoutube,
         video_url: chosenUrl,
@@ -1950,9 +2179,14 @@ export default function App() {
       };
     });
 
-    setProjects(updated);
-    saveProjectsToStorage(updated);
+    const normalized = updated.map(normalizeProject);
+    setProjects(normalized);
+    saveProjectsToStorage(normalized);
     setVideoError(false);
+
+    const now = Date.now();
+    lastSyncTimestampRef.current = now;
+    setStoredSyncTime(now);
 
     // Sync active video to URL parameters so page refreshes never lose the link
     try {
@@ -1963,8 +2197,10 @@ export default function App() {
       window.history.replaceState({}, '', currentUrl.toString());
     } catch {}
 
+    pushToSupabase(normalized, markersRef.current, settingsRef.current, now, true);
+
     setShowUploadSourceModal(false);
-    showToast('Updated and saved project video source & URL!');
+    showToast('Updated, saved, and synced project video source & URL!');
   };
 
   // LOCAL VIDEO UPLOAD HANDLERS
@@ -2008,7 +2244,12 @@ export default function App() {
     reader.onload = (uploadEvent) => {
       const base64Data = uploadEvent.target?.result;
       if (base64Data) {
-        setSettings((prev) => ({ ...prev, studioLogo: base64Data }));
+        const nextSettings = { ...settings, studioLogo: base64Data };
+        setSettings(nextSettings);
+        const now = Date.now();
+        lastSyncTimestampRef.current = now;
+        setStoredSyncTime(now);
+        pushToSupabase(projectsRef.current, markersRef.current, nextSettings, now, true);
         showToast('Logo & Browser Tab Favicon updated successfully!');
       }
     };
@@ -2020,13 +2261,14 @@ export default function App() {
     if (!newProjectForm.title.trim()) return;
 
     const newProjId = `proj_${Date.now()}`;
+    const { url: cleanR2 } = cleanAndEnhanceVideoUrl(newProjectForm.r2Url.trim());
     const initialVideoVersion = {
       id: `ver_${Date.now()}_1`,
       version_label: newProjectForm.version_label.trim() || 'Version 1.0',
       source_type: newProjectForm.source_type,
       r2Url:
         newProjectForm.source_type === 'r2'
-          ? newProjectForm.r2Url.trim() || DEMO_FALLBACK_MP4
+          ? cleanR2 || DEMO_FALLBACK_MP4
           : '',
       driveUrl:
         newProjectForm.source_type === 'gdrive'
@@ -2066,11 +2308,18 @@ export default function App() {
     };
 
     const updated = [...projects, created];
-    setProjects(updated);
-    saveProjectsToStorage(updated);
+    const normalized = updated.map(normalizeProject);
+    setProjects(normalized);
+    saveProjectsToStorage(normalized);
     setActiveProjectId(created.id);
     setShowNewProjectModal(false);
-    showToast(`Created ${created.tab_label}: ${created.title}`);
+
+    const now = Date.now();
+    lastSyncTimestampRef.current = now;
+    setStoredSyncTime(now);
+    pushToSupabase(normalized, markersRef.current, settingsRef.current, now, true);
+
+    showToast(`Created ${created.tab_label}: ${created.title} (Synced)`);
   };
 
   const handleDeleteProject = (e, targetId) => {
@@ -2089,10 +2338,20 @@ export default function App() {
     if (activeProjectId === targetId) {
       setActiveProjectId(reindexedProjects[0].id);
     }
-    setProjects(reindexedProjects);
-    saveProjectsToStorage(reindexedProjects);
-    setMarkers((prev) => prev.filter((m) => m.project_id !== targetId));
-    showToast('Project deleted successfully.');
+    const normalized = reindexedProjects.map(normalizeProject);
+    setProjects(normalized);
+    saveProjectsToStorage(normalized);
+
+    const updatedMarkers = markers.filter((m) => m.project_id !== targetId);
+    setMarkers(updatedMarkers);
+    localStorage.setItem('deepdox_markers_v7', JSON.stringify(updatedMarkers));
+
+    const now = Date.now();
+    lastSyncTimestampRef.current = now;
+    setStoredSyncTime(now);
+    pushToSupabase(normalized, updatedMarkers, settingsRef.current, now, true);
+
+    showToast('Project deleted successfully (Synced).');
   };
 
   const handleResetDemoData = () => {
@@ -2103,6 +2362,10 @@ export default function App() {
     setSettings(DEFAULT_SETTINGS);
     setActiveProjectId(INITIAL_PROJECTS[0].id);
     setShowSettingsModal(false);
+    const now = Date.now();
+    lastSyncTimestampRef.current = now;
+    setStoredSyncTime(now);
+    pushToSupabase(defaults, INITIAL_MARKERS, DEFAULT_SETTINGS, now, true);
     showToast('Reset all studio settings & projects to default');
   };
 
@@ -2112,15 +2375,13 @@ export default function App() {
     const currentVideo =
       activeVersion?.r2Url ||
       activeProject?.r2Url ||
-      (activeProject?.video_url && !activeProject.video_url.includes('asldkfasdfsl.mp4')
-        ? activeProject.video_url
-        : '');
+      (!isFallbackDemo(activeProject?.video_url) ? activeProject.video_url : '');
     const currentType = activeVersion?.source_type || activeProject?.source_type || 'r2';
 
     const params = new URLSearchParams();
     params.set('view', 'client');
     params.set('project', activeProject?.id || '');
-    if (currentVideo && currentVideo !== DEMO_FALLBACK_MP4) {
+    if (currentVideo && !isFallbackDemo(currentVideo)) {
       params.set('video', currentVideo);
       params.set('type', currentType);
     }
@@ -3148,21 +3409,29 @@ export default function App() {
                           </span>
                         </button>
 
-                        {(activeProject?.versions || []).length > 1 && (
+                        {role === 'editor' && (
                           <button
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              if (window.confirm(`Delete ${ver.version_label}? This will remove this video cut and its specific feedback notes.`)) {
+                              const isMultiple = (activeProject?.versions || []).length > 1;
+                              const confirmMsg = isMultiple
+                                ? `Delete ${ver.version_label}? This will remove this video cut and its specific feedback notes.`
+                                : `Clear or reset video link for ${ver.version_label}?`;
+                              if (window.confirm(confirmMsg)) {
                                 handleDeleteVersion(ver.id);
                               }
                             }}
-                            className={`p-1 mr-1.5 rounded-full transition-colors ${
+                            className={`p-1 mr-1.5 rounded-full transition-colors cursor-pointer ${
                               isVerActive
                                 ? 'hover:bg-black/25 text-white/80 hover:text-white'
                                 : 'hover:bg-slate-300 dark:hover:bg-white/20 text-slate-400 hover:text-rose-500'
                             }`}
-                            title={`Delete ${ver.version_label}`}
+                            title={
+                              (activeProject?.versions || []).length > 1
+                                ? `Delete ${ver.version_label}`
+                                : `Clear video link for ${ver.version_label}`
+                            }
                           >
                             <Trash2 className="w-3 h-3" />
                           </button>
