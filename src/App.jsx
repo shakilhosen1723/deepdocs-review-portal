@@ -63,519 +63,29 @@ import {
 import LandingPage from './components/LandingPage';
 
 // ==========================================
-// DEFAULT SVG FAVICON FOR BROWSER TAB
+// IMPORT MODULAR STATE CONTROLLER & UTILITIES
 // ==========================================
-const DEFAULT_FAVICON_SVG =
-  "data:image/svg+xml;utf8," +
-  encodeURIComponent(`
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <defs>
-        <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#8b5cf6" />
-          <stop offset="50%" stop-color="#d946ef" />
-          <stop offset="100%" stop-color="#4f46e5" />
-        </linearGradient>
-      </defs>
-      <rect width="64" height="64" rx="16" fill="url(#g)" />
-      <rect x="4" y="4" width="56" height="56" rx="13" fill="#21094e" fill-opacity="0.82" />
-      <polygon points="25,18 25,46 47,32" fill="#ffffff" />
-    </svg>
-  `);
-
-// ==========================================
-// SUPABASE LIVE CLOUD SYNC CONFIGURATION
-// ==========================================
-const SUPABASE_URL = 'https://ysugdxzpixasjycewblg.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_Ny8Rx_02YCDL6SCUBoy0Ig_zH9wa5Xg';
-const SUPABASE_SYNC_TABLE = 'deepdox_portal_state';
-const SUPABASE_ENDPOINT = `${SUPABASE_URL}/rest/v1/${SUPABASE_SYNC_TABLE}`;
-const PORTAL_STATE_ID = 'master_workspace';
-
-// ==========================================
-// INITIAL DEMO DATA & DEEPDOX CONFIGURATION
-// ==========================================
-const DEFAULT_SETTINGS = {
-  studioName: 'DeepDox',
-  studioBadge: 'PRO SUITE',
-  studioSubName: 'Interactive Video Review & Client Portal',
-  studioLogo: '',
-  editorName: 'Shakil Hosen',
-  editorEmail: 'shakilhossion917@gmail.com',
-  editorWhatsapp: '+8801700000000',
-  emailjsServiceId: 'service_eqdjjgl',
-  emailjsTemplateId: 'template_khezhvx',
-  emailjsPublicKey: 'Jbq66LHL5yNjAx_1h'
-};
-
-const MARKER_CATEGORIES = [
-  {
-    label: 'Visual / VFX',
-    pill: 'bg-violet-500/15 text-violet-700 dark:text-violet-300 border-violet-400/40 dark:border-violet-500/30'
-  },
-  {
-    label: 'Video / Timing',
-    pill: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-400/40 dark:border-amber-500/30'
-  },
-  {
-    label: 'Color Grade',
-    pill: 'bg-fuchsia-500/15 text-fuchsia-700 dark:text-fuchsia-300 border-fuchsia-400/40 dark:border-fuchsia-500/30'
-  },
-  {
-    label: 'Audio Mix',
-    pill: 'bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border-cyan-400/40 dark:border-cyan-500/30'
-  }
-];
-
-const DEMO_FALLBACK_MP4 =
-  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
-
-const INITIAL_PROJECTS = [
-  {
-    id: 'proj_1',
-    tab_number: 1,
-    tab_label: 'Project 1',
-    title: 'song 01',
-    client_name: 'Sepand Studios',
-    version_label: 'Video v1.4',
-    active_version_id: 'ver_1_2',
-    versions: [
-      {
-        id: 'ver_1_1',
-        version_label: 'Video v1.0',
-        source_type: 'r2',
-        r2Url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-        driveUrl: 'https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view',
-        youtubeUrl: 'https://www.youtube.com/watch?v=aqz-KE-bpKQ',
-        created_at: '2026-10-18T10:00:00Z'
-      },
-      {
-        id: 'ver_1_2',
-        version_label: 'Video v1.4',
-        source_type: 'r2',
-        r2Url: DEMO_FALLBACK_MP4,
-        driveUrl: 'https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view',
-        youtubeUrl: 'https://www.youtube.com/watch?v=aqz-KE-bpKQ',
-        created_at: '2026-10-20T14:20:00Z'
-      }
-    ],
-    status_label: 'Status: In Revision / Fixing Notes',
-    source_type: 'r2',
-    r2Url: DEMO_FALLBACK_MP4,
-    driveUrl: 'https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view',
-    youtubeUrl: 'https://www.youtube.com/watch?v=aqz-KE-bpKQ',
-    video_url: DEMO_FALLBACK_MP4,
-    deadline: '2026-11-12',
-    client_whatsapp: '+15550192834',
-    client_email: 'production@sepandstudios.example.com',
-    created_at: '2026-10-20T14:20:00Z'
-  },
-  {
-    id: 'proj_2',
-    tab_number: 2,
-    tab_label: 'Project 2',
-    title: 'Brand Anthem',
-    client_name: 'Sepand Studios',
-    version_label: 'APPROVED',
-    active_version_id: 'ver_2_1',
-    versions: [
-      {
-        id: 'ver_2_1',
-        version_label: 'APPROVED',
-        source_type: 'r2',
-        r2Url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
-        driveUrl: 'https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view',
-        youtubeUrl: 'https://www.youtube.com/watch?v=aqz-KE-bpKQ',
-        created_at: '2026-10-24T09:15:00Z'
-      }
-    ],
-    status_label: 'Status: Approved & Completed',
-    source_type: 'r2',
-    r2Url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
-    driveUrl: 'https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view',
-    youtubeUrl: 'https://www.youtube.com/watch?v=aqz-KE-bpKQ',
-    video_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
-    deadline: '2026-11-25',
-    client_whatsapp: '+15550192834',
-    client_email: 'production@sepandstudios.example.com',
-    created_at: '2026-10-24T09:15:00Z'
-  }
-];
-
-const INITIAL_MARKERS = [
-  {
-    id: 'm_101',
-    project_id: 'proj_1',
-    version_id: 'ver_1_1',
-    version_label: 'Video v1.0',
-    timestamp_seconds: 14.0,
-    category: 'Visual / VFX',
-    client_comment: 'Please check pacing on the opening scene before the first chorus.',
-    is_resolved: false,
-    editor_reply: 'Noted. Working on it.',
-    attachment_url: null,
-    drawing_data: null,
-    created_at: '2026-10-18T15:00:00Z'
-  },
-  {
-    id: 'm_102',
-    project_id: 'proj_1',
-    version_id: 'ver_1_1',
-    version_label: 'Video v1.0',
-    timestamp_seconds: 28.5,
-    category: 'Video / Timing',
-    client_comment: 'The opening transition needs to be slightly faster by 8 frames.',
-    is_resolved: true,
-    editor_reply: 'Fixed in Version 2 export!',
-    attachment_url: null,
-    drawing_data: null,
-    created_at: '2026-10-18T15:30:00Z'
-  },
-  {
-    id: 'm_103',
-    project_id: 'proj_1',
-    version_id: 'ver_1_2',
-    version_label: 'Video v1.4',
-    timestamp_seconds: 14.0,
-    category: 'Visual / VFX',
-    client_comment: 'Please adjust the lighting in the final scene.',
-    is_resolved: false,
-    editor_reply: 'Noted. Working on it.',
-    attachment_url: null,
-    drawing_data: null,
-    created_at: '2026-10-20T15:00:00Z'
-  },
-  {
-    id: 'm_104',
-    project_id: 'proj_1',
-    version_id: 'ver_1_2',
-    version_label: 'Video v1.4',
-    timestamp_seconds: 35.0,
-    category: 'Visual / VFX',
-    client_comment: 'Soften the volumetric stage light rays behind the lead vocalist.',
-    is_resolved: true,
-    editor_reply: 'Fixed! Re-baked the volumetric fog pass with higher sample count.',
-    attachment_url: null,
-    drawing_data: null,
-    created_at: '2026-10-20T15:04:00Z'
-  },
-  {
-    id: 'm_105',
-    project_id: 'proj_1',
-    version_id: 'ver_1_2',
-    version_label: 'Video v1.4',
-    timestamp_seconds: 46.0,
-    category: 'Video / Timing',
-    client_comment: 'Switch to the wide holographic stage angle 12 frames earlier right on the drum impact.',
-    is_resolved: false,
-    editor_reply: '',
-    attachment_url: null,
-    drawing_data: null,
-    created_at: '2026-10-20T15:15:00Z'
-  },
-  {
-    id: 'm_106',
-    project_id: 'proj_1',
-    version_id: 'ver_1_2',
-    version_label: 'Video v1.4',
-    timestamp_seconds: 68.5,
-    category: 'Color Grade',
-    client_comment: 'Boost golden highlight warmth on the crowd silhouette shots.',
-    is_resolved: true,
-    editor_reply: 'Fixed! Added warm midtone push and balanced skin highlights.',
-    attachment_url: null,
-    drawing_data: null,
-    created_at: '2026-10-20T15:25:00Z'
-  },
-  {
-    id: 'm_201',
-    project_id: 'proj_2',
-    version_id: 'ver_2_1',
-    version_label: 'APPROVED',
-    timestamp_seconds: 8.0,
-    category: 'Color Grade',
-    client_comment: 'Final color pass looks crisp and ready for broadcast.',
-    is_resolved: true,
-    editor_reply: 'Thank you! Master export locked.',
-    attachment_url: null,
-    drawing_data: null,
-    created_at: '2026-10-26T12:00:00Z'
-  }
-];
-
-// ==========================================
-// HELPER UTILITIES
-// ==========================================
-function formatTimecode(seconds, longFormat = true) {
-  if (!seconds || isNaN(seconds) || seconds < 0) {
-    return longFormat ? '00:00:00' : '00:00';
-  }
-  const hrs = Math.floor(seconds / 3600);
-  const mins = Math.floor((seconds % 3600) / 60);
-  const secs = Math.floor(seconds % 60);
-  if (longFormat) {
-    return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(
-      secs
-    ).padStart(2, '0')}`;
-  }
-  return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-}
-
-function parseTimecodeToSeconds(tcString) {
-  if (!tcString) return 0;
-  const parts = tcString.trim().split(':').map((p) => parseFloat(p) || 0);
-  if (parts.length === 3) {
-    return parts[0] * 3600 + parts[1] * 60 + parts[2];
-  }
-  if (parts.length === 2) {
-    return parts[0] * 60 + parts[1];
-  }
-  if (parts.length === 1) {
-    return parts[0];
-  }
-  return 0;
-}
-
-function resolveVideoEngine(project, activeVersion = null) {
-  if (!project) {
-    return {
-      mode: 'r2',
-      badge: 'Direct MP4 Stream',
-      streamUrl: '',
-      embedUrl: ''
-    };
-  }
-
-  const ver = activeVersion || null;
-  const preferredType = ver?.source_type || project.source_type || 'r2';
-
-  const r2Candidate = (
-    ver?.r2Url ||
-    project.r2Url ||
-    (!project.video_url?.includes('drive.google.com') &&
-    !project.video_url?.includes('youtube') &&
-    !project.video_url?.includes('youtu.be')
-      ? project.video_url
-      : '') ||
-    DEMO_FALLBACK_MP4
-  ).trim();
-
-  const driveCandidate = (
-    ver?.driveUrl ||
-    project.driveUrl ||
-    (project.video_url?.includes('drive.google.com') ? project.video_url : '') ||
-    'https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view'
-  ).trim();
-
-  const youtubeCandidate = (
-    ver?.youtubeUrl ||
-    project.youtubeUrl ||
-    (project.video_url?.includes('youtube') || project.video_url?.includes('youtu.be')
-      ? project.video_url
-      : '') ||
-    'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
-  ).trim();
-
-  if (preferredType === 'youtube') {
-    const ytMatch = youtubeCandidate.match(
-      /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/
-    );
-    const ytId = ytMatch ? ytMatch[1] : null;
-    const embedUrl = ytId
-      ? `https://www.youtube-nocookie.com/embed/${ytId}?rel=0&modestbranding=1`
-      : youtubeCandidate;
-    return {
-      mode: 'youtube',
-      badge: 'YouTube Embed Stream',
-      streamUrl: youtubeCandidate,
-      embedUrl
-    };
-  }
-
-  if (preferredType === 'gdrive') {
-    const fileIdMatch =
-      driveCandidate.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) ||
-      driveCandidate.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-    const fileId = fileIdMatch && fileIdMatch[1] ? fileIdMatch[1] : null;
-    const embedUrl = fileId
-      ? `https://drive.google.com/file/d/${fileId}/preview`
-      : driveCandidate.includes('/preview')
-      ? driveCandidate
-      : driveCandidate.replace(/\/view.*$/, '/preview');
-    return {
-      mode: 'gdrive',
-      badge: 'Google Drive Preview',
-      streamUrl: driveCandidate,
-      embedUrl
-    };
-  }
-
-  return {
-    mode: 'r2',
-    badge: 'Direct MP4 Stream',
-    streamUrl: r2Candidate,
-    embedUrl: r2Candidate
-  };
-}
-
-function formatDeadlineDisplay(dateString) {
-  if (!dateString) return 'No Deadline';
-  const target = new Date(dateString + 'T23:59:59');
-  if (isNaN(target.getTime())) return dateString;
-  return target.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric'
-  });
-}
-
-const STORAGE_TIME_KEY = 'deepdox_sync_timestamp_v7';
-const getStoredSyncTime = () => {
-  try {
-    return Number(localStorage.getItem(STORAGE_TIME_KEY) || 0);
-  } catch {
-    return 0;
-  }
-};
-const setStoredSyncTime = (time) => {
-  try {
-    localStorage.setItem(STORAGE_TIME_KEY, String(time));
-  } catch {}
-};
-
-const isFallbackDemo = (url) => {
-  if (!url || typeof url !== 'string') return true;
-  const u = url.trim();
-  return (
-    u === '' ||
-    u === DEMO_FALLBACK_MP4 ||
-    u.includes('sample/BigBuckBunny.mp4') ||
-    u.includes('sample/ForBiggerBlazes.mp4') ||
-    u.includes('asldkfasdfsl.mp4')
-  );
-};
-
-function cleanAndEnhanceVideoUrl(rawInput) {
-  if (!rawInput || typeof rawInput !== 'string') return { url: '', detectedType: 'r2' };
-  let url = rawInput.trim();
-  const mdMatch = url.match(/\((https?:\/\/[^\s)]+)\)/);
-  if (mdMatch) {
-    url = mdMatch[1];
-  } else {
-    url = url.replace(/^["'`]|["'`]$/g, '').trim();
-  }
-  let detectedType = 'r2';
-  if (url.includes('drive.google.com')) {
-    detectedType = 'gdrive';
-  } else if (url.includes('youtube.com') || url.includes('youtu.be')) {
-    detectedType = 'youtube';
-  }
-  return { url, detectedType };
-}
-
-function findProjectByIdOrTitle(projectsList, idOrTitle) {
-  if (!idOrTitle || !Array.isArray(projectsList) || projectsList.length === 0) {
-    return projectsList?.[0] || null;
-  }
-  const clean = String(idOrTitle).trim().toLowerCase();
-  return (
-    projectsList.find((p) => String(p.id).toLowerCase() === clean) ||
-    projectsList.find((p) => p.title && p.title.trim().toLowerCase() === clean) ||
-    projectsList.find((p) => p.tab_label && p.tab_label.trim().toLowerCase() === clean) ||
-    projectsList[0]
-  );
-}
-
-function saveProjectsToStorage(updatedProjects) {
-  try {
-    localStorage.setItem('deepdox_projects_v7', JSON.stringify(updatedProjects));
-  } catch (err) {
-    console.warn('Projects storage write failed:', err);
-  }
-}
-
-function normalizeProject(p, idx = 0) {
-  const versions = (
-    p.versions && Array.isArray(p.versions) && p.versions.length > 0
-      ? p.versions
-      : [
-          {
-            id: `ver_${p.id}_1`,
-            version_label: p.version_label || 'Version 1',
-            source_type: p.source_type || 'r2',
-            r2Url: p.r2Url || p.video_url || DEMO_FALLBACK_MP4,
-            driveUrl: p.driveUrl || '',
-            youtubeUrl: p.youtubeUrl || '',
-            created_at: p.created_at || new Date().toISOString()
-          }
-        ]
-  ).map((v, vIdx) => {
-    // Preserve custom version labels like "Video v1.4", "Version 1.1.4", etc.
-    const versionLabel =
-      v.version_label && v.version_label.trim() !== ''
-        ? v.version_label.trim()
-        : `Version ${vIdx + 1}`;
-
-    // Preserve the user-provided video URL without reverting to demo
-    let r2Url = v.r2Url && v.r2Url.trim() !== '' ? v.r2Url.trim() : '';
-    if (isFallbackDemo(r2Url) && !isFallbackDemo(p.r2Url)) {
-      r2Url = p.r2Url.trim();
-    }
-    if (!r2Url) {
-      r2Url = DEMO_FALLBACK_MP4;
-    }
-
-    return {
-      ...v,
-      version_label: versionLabel,
-      r2Url
-    };
-  });
-
-  const active_version_id =
-    p.active_version_id && versions.some((v) => v.id === p.active_version_id)
-      ? p.active_version_id
-      : versions[versions.length - 1]?.id || versions[0]?.id;
-
-  const activeVer = versions.find((v) => v.id === active_version_id) || versions[versions.length - 1] || versions[0];
-  const activeVerLabel = activeVer?.version_label || `Version ${versions.length}`;
-  const activeSourceType = activeVer?.source_type || p.source_type || 'r2';
-
-  let activeR2 = activeVer?.r2Url || p.r2Url || '';
-  if (isFallbackDemo(activeR2) && !isFallbackDemo(p.r2Url)) {
-    activeR2 = p.r2Url;
-  }
-  if (!activeR2) {
-    activeR2 = DEMO_FALLBACK_MP4;
-  }
-  activeR2 = activeR2.trim();
-
-  const activeDrive = activeVer?.driveUrl || p.driveUrl || '';
-  const activeYoutube = activeVer?.youtubeUrl || p.youtubeUrl || '';
-  const activeVideoUrl =
-    activeSourceType === 'youtube'
-      ? activeYoutube
-      : activeSourceType === 'gdrive'
-      ? activeDrive
-      : activeR2;
-
-  const cleanTabLabel =
-    !p.tab_label || /^project\s*\d+/i.test(p.tab_label)
-      ? `Video ${idx + 1}`
-      : p.tab_label;
-
-  return {
-    ...p,
-    tab_label: cleanTabLabel,
-    versions,
-    active_version_id,
-    source_type: activeSourceType,
-    r2Url: activeR2,
-    driveUrl: activeDrive,
-    youtubeUrl: activeYoutube,
-    video_url: activeVideoUrl,
-    version_label: activeVerLabel
-  };
-}
+import {
+  AppState,
+  useAppState,
+  DEFAULT_FAVICON_SVG,
+  DEFAULT_SETTINGS,
+  MARKER_CATEGORIES,
+  DEMO_FALLBACK_MP4,
+  formatTimecode,
+  parseTimecodeToSeconds,
+  formatDeadlineDisplay,
+  cleanAndEnhanceVideoUrl,
+  resolveVideoEngine,
+  isFallbackDemo,
+  findProjectByIdOrTitle,
+  saveProjectsToStorage,
+  saveMarkersToStorage,
+  saveSettingsToStorage,
+  normalizeProject,
+  normalizeMarker,
+  STORAGE_KEYS
+} from './state/AppState';
 
 // DOT MATRIX GRAPHIC COMPONENT
 function DotMatrix({ className = '' }) {
@@ -597,25 +107,40 @@ function DotMatrix({ className = '' }) {
 // MAIN APPLICATION COMPONENT
 // ==========================================
 export default function App() {
-  const urlParams = useMemo(() => new URLSearchParams(window.location.search), []);
+  // Reactive subscription to modular AppState controller
+  const appState = useAppState();
+
+  const urlParams = useMemo(() => new URLSearchParams(typeof window !== 'undefined' ? window.location.search : ''), []);
   const isStrictClientBookmark =
     urlParams.get('view') === 'client' || urlParams.get('role') === 'client';
 
-  const [currentView, setCurrentView] = useState(() => {
-    const p = new URLSearchParams(window.location.search);
-    if (p.get('view') === 'review' || p.get('view') === 'client' || p.get('project')) {
-      return 'review';
-    }
-    return 'landing';
-  });
+  // Extract reactive state properties from AppState
+  const projects = appState.projects;
+  const markers = appState.markers;
+  const settings = appState.settings;
+  const activeProjectId = appState.activeProjectId;
+  const activeVersionId = appState.activeVersionId;
+  const currentView = appState.currentView;
+  const role = isStrictClientBookmark ? 'client' : appState.role;
+  const themeMode = appState.themeMode;
+  const syncStatus = appState.syncStatus;
+  const isPlaying = appState.isPlaying;
+  const currentTime = appState.currentTime;
+  const duration = appState.duration;
+  const volume = appState.volume;
+  const isMuted = appState.isMuted;
+  const playbackSpeed = appState.playbackSpeed;
+  const videoError = appState.videoError;
+  const selectedVersionFilter = appState.selectedVersionFilter;
+  const isComparisonMode = appState.isComparisonMode;
+  const compareVersionLeftId = appState.compareVersionLeftId;
+  const compareVersionRightId = appState.compareVersionRightId;
+  const comparisonAudioTrack = appState.comparisonAudioTrack;
 
-  const [role, setRole] = useState(() =>
-    isStrictClientBookmark ? 'client' : localStorage.getItem('deepdox_role_v7') || 'editor'
-  );
-
-  const [themeMode, setThemeMode] = useState(() => {
-    return localStorage.getItem('deepdox_theme_mode') || 'light';
-  });
+  // Active models & video engine
+  const activeProject = useMemo(() => appState.getActiveProject(), [projects, activeProjectId]);
+  const activeVersion = useMemo(() => appState.getActiveVersion(), [activeProject, activeVersionId]);
+  const videoEngine = useMemo(() => appState.getVideoEngine(), [activeProject, activeVersion]);
 
   // Sync Tailwind .dark class on <html> document element for crisp styling
   useEffect(() => {
@@ -626,205 +151,60 @@ export default function App() {
     }
   }, [themeMode]);
 
-  const [settings, setSettings] = useState(() => {
-    try {
-      const saved =
-        localStorage.getItem('deepdox_settings_v7') ||
-        localStorage.getItem('deepdox_settings_v5');
-      return saved ? { ...DEFAULT_SETTINGS, ...JSON.parse(saved) } : DEFAULT_SETTINGS;
-    } catch {
-      return DEFAULT_SETTINGS;
-    }
-  });
-
-  // ROBUST PROJECT INITIALIZATION & PERSISTENCE
-  // INITIAL_PROJECTS acts as the robust, single source of truth for default project configurations and video links.
-  const [projects, setProjects] = useState(() => {
-    try {
-      const saved =
-        localStorage.getItem('deepdox_projects_v7') ||
-        localStorage.getItem('deepdox_projects_v9') ||
-        localStorage.getItem('deepdox_projects_v8');
-
-      let loaded = INITIAL_PROJECTS.map(normalizeProject);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          loaded = parsed.map(normalizeProject);
-        }
-      }
-
-      // Quick synchronization check for URL parameters (?video=... or ?vurl=...)
-      const p = new URLSearchParams(window.location.search);
-      const urlVideo = p.get('video') || p.get('vurl');
-      const urlProjId = p.get('project');
-      const urlType =
-        p.get('type') ||
-        (urlVideo?.includes('drive.google.com')
-          ? 'gdrive'
-          : urlVideo?.includes('youtube') || urlVideo?.includes('youtu.be')
-          ? 'youtube'
-          : 'r2');
-      const urlTitle = p.get('title');
-
-      if (urlVideo && urlVideo.trim() && !urlVideo.includes('asldkfasdfsl.mp4')) {
-        const { url: cleanUrl } = cleanAndEnhanceVideoUrl(urlVideo);
-        const targetProj = urlProjId ? findProjectByIdOrTitle(loaded, urlProjId) : loaded[0];
-        const targetProjId = targetProj ? targetProj.id : loaded[0]?.id;
-        loaded = loaded.map((proj) => {
-          if (proj.id !== targetProjId) return proj;
-          const activeVerId = proj.active_version_id || proj.versions?.[0]?.id;
-          const updatedVers = (proj.versions || []).map((v) => {
-            if (v.id === activeVerId) {
-              return {
-                ...v,
-                source_type: urlType,
-                r2Url: urlType === 'r2' ? cleanUrl : v.r2Url,
-                driveUrl: urlType === 'gdrive' ? cleanUrl : v.driveUrl,
-                youtubeUrl: urlType === 'youtube' ? cleanUrl : v.youtubeUrl
-              };
-            }
-            return v;
-          });
-          return {
-            ...proj,
-            title: urlTitle ? decodeURIComponent(urlTitle) : proj.title,
-            source_type: urlType,
-            r2Url: urlType === 'r2' ? cleanUrl : proj.r2Url,
-            driveUrl: urlType === 'gdrive' ? cleanUrl : proj.driveUrl,
-            youtubeUrl: urlType === 'youtube' ? cleanUrl : proj.youtubeUrl,
-            video_url: cleanUrl,
-            versions: updatedVers
-          };
-        });
-      }
-
-      return loaded;
-    } catch {
-      return INITIAL_PROJECTS.map(normalizeProject);
-    }
-  });
-
-  const [markers, setMarkers] = useState(() => {
-    try {
-      const saved =
-        localStorage.getItem('deepdox_markers_v7') ||
-        localStorage.getItem('deepdox_markers_v8');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      }
-      return INITIAL_MARKERS;
-    } catch {
-      return INITIAL_MARKERS;
-    }
-  });
-
-  // Seed localStorage fallback if empty on new client device or browser session
+  // Sync favicon & document title
   useEffect(() => {
-    try {
-      const existing = localStorage.getItem('deepdox_projects_v7');
-      if (!existing) {
-        localStorage.setItem('deepdox_projects_v7', JSON.stringify(projects));
-        localStorage.setItem('deepdox_markers_v7', JSON.stringify(markers));
-        localStorage.setItem('deepdox_settings_v7', JSON.stringify(settings));
-      }
-    } catch (e) {
-      console.warn('Initial storage seed warning:', e);
+    const faviconHref =
+      settings.studioLogo && settings.studioLogo.trim() !== ''
+        ? settings.studioLogo.trim()
+        : DEFAULT_FAVICON_SVG;
+
+    let link = document.querySelector("link[rel~='icon']");
+    if (!link) {
+      link = document.createElement('link');
+      link.rel = 'icon';
+      document.getElementsByTagName('head')[0].appendChild(link);
     }
-  }, [projects, markers, settings]);
+    link.href = faviconHref;
 
-  const [reviewActiveTab, setReviewActiveTab] = useState('review');
-
-  // URL PARAMETER SYNCHRONIZATION FOR CLIENT REVIEW LINKS
-  const [activeProjectId, setActiveProjectId] = useState(() => {
-    const urlProj = urlParams.get('project');
-    if (urlProj) {
-      const match = findProjectByIdOrTitle(projects, urlProj);
-      if (match) return match.id;
+    const baseTitle = settings.studioName || 'DeepDox';
+    if (activeProject?.title) {
+      document.title = `${activeProject.title} — ${baseTitle} Review Portal`;
+    } else {
+      document.title = `${baseTitle} Pro Suite — Video Review & Client Portal`;
     }
-    return projects[0]?.id || INITIAL_PROJECTS[0].id;
-  });
+  }, [settings.studioLogo, settings.studioName, activeProject?.title]);
 
-  // Keep activeProjectId synchronized if URL query parameter ?project=... changes or remote projects arrive
-  useEffect(() => {
-    const urlProj = urlParams.get('project');
-    if (urlProj && projects.length > 0) {
-      const match = findProjectByIdOrTitle(projects, urlProj);
-      if (match && activeProjectId !== match.id) {
-        setActiveProjectId(match.id);
-      }
-    } else if (projects.length > 0 && !projects.some((p) => p.id === activeProjectId)) {
-      setActiveProjectId(projects[0].id);
-    }
-  }, [urlParams, projects, activeProjectId]);
-
-  // Active Project & Active Version Resolution
-  const activeProject = useMemo(() => {
-    return projects.find((p) => p.id === activeProjectId) || projects[0];
-  }, [projects, activeProjectId]);
-
-  const activeVersion = useMemo(() => {
-    if (!activeProject?.versions || activeProject.versions.length === 0) return null;
-    return (
-      activeProject.versions.find((v) => v.id === activeProject.active_version_id) ||
-      activeProject.versions[0]
-    );
-  }, [activeProject]);
-
-  const videoEngine = useMemo(() => {
-    return resolveVideoEngine(activeProject, activeVersion);
-  }, [activeProject, activeVersion]);
-
-  // POINT 1: INLINE PROJECT EDITING STATES
+  // Local UI / modal states
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState('');
   const [editingVersion, setEditingVersion] = useState(false);
   const [versionDraft, setVersionDraft] = useState('');
   const [editingDeadline, setEditingDeadline] = useState(false);
 
-  // POINT 4 & 5: VERSION MANAGEMENT & FEEDBACK FILTERING
-  const [selectedVersionFilter, setSelectedVersionFilter] = useState('all');
+  const [markerFilter, setMarkerFilter] = useState('all');
   const [isFeedbackExpanded, setIsFeedbackExpanded] = useState(false);
-  const [uploadModalTab, setUploadModalTab] = useState('source'); // 'source' | 'versions'
+  const [uploadModalTab, setUploadModalTab] = useState('source');
   const [newVideoName, setNewVideoName] = useState('');
   const [newVideoSourceType, setNewVideoSourceType] = useState('r2');
   const [newVideoUrl, setNewVideoUrl] = useState('');
 
-  // POINT 6: SIDE-BY-SIDE VIDEO COMPARISON MODE
-  const [isComparisonMode, setIsComparisonMode] = useState(false);
-  const [activeWorkspaceTab, setActiveWorkspaceTab] = useState('review'); // 'review' | 'feedback' | 'annotations' | 'comparison'
-  const [compareVersionLeftId, setCompareVersionLeftId] = useState('');
-  const [compareVersionRightId, setCompareVersionRightId] = useState('');
-  const [comparisonAudioTrack, setComparisonAudioTrack] = useState('left'); // 'left' | 'right' | 'mute'
-
-  // Automatically reset comparison mode if active project only has 1 version
-  useEffect(() => {
-    if ((activeProject?.versions?.length || 0) <= 1 && isComparisonMode) {
-      setIsComparisonMode(false);
-    }
-  }, [activeProject, isComparisonMode]);
-
-  // POINT 8: TOP-RIGHT WORKSPACE CONTROLS
-  const [videoAspectRatio, setVideoAspectRatio] = useState('auto'); // 'auto' | 'horizontal' | 'vertical'
+  const [activeWorkspaceTab, setActiveWorkspaceTab] = useState('review');
+  const [videoAspectRatio, setVideoAspectRatio] = useState('auto');
   const [detectedVideoAspect, setDetectedVideoAspect] = useState('horizontal');
   const [videoLayoutMode, setVideoLayoutMode] = useState('side-by-side');
 
-  // POINT 9: IMAGE & LOGO ATTACHMENTS IN MESSAGE NOTES
   const [newCommentAttachment, setNewCommentAttachment] = useState(null);
   const [newCommentAttachmentName, setNewCommentAttachmentName] = useState(null);
   const [lightboxImage, setLightboxImage] = useState(null);
   const attachmentFileInputRef = useRef(null);
 
-  // POINT 10: PAUSED-FRAME CANVAS DRAWING / PEN TOOL
   const canvasRef = useRef(null);
   const [isDrawingMode, setIsDrawingMode] = useState(false);
-  const [drawColor, setDrawColor] = useState('#facc15'); // Neon Yellow default
+  const [drawColor, setDrawColor] = useState('#facc15');
   const [drawLineWidth, setDrawLineWidth] = useState(3);
   const [isDrawing, setIsDrawing] = useState(false);
   const [hasDrawnOnCanvas, setHasDrawnOnCanvas] = useState(false);
 
-  // REFS & PLAYER CONTROLS
   const videoRef = useRef(null);
   const compareVideoRef = useRef(null);
   const playerContainerRef = useRef(null);
@@ -835,21 +215,18 @@ export default function App() {
   const newProjectLocalVideoRef = useRef(null);
   const newVideoLocalRef = useRef(null);
 
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [volume, setVolume] = useState(1);
-  const [isMuted, setIsMuted] = useState(false);
-  const [playbackSpeed, setPlaybackSpeed] = useState(1);
+  // Attach video elements to AppState
+  useEffect(() => {
+    appState.attachVideoElements(videoRef.current, compareVideoRef.current);
+  });
+
   const [useCorsAnonymous, setUseCorsAnonymous] = useState(false);
-  const [videoError, setVideoError] = useState(false);
   const [hoverZone, setHoverZone] = useState(null);
   const [skipFeedback, setSkipFeedback] = useState(null);
   const [timelineHoverTime, setTimelineHoverTime] = useState(null);
   const [timelineHoverPos, setTimelineHoverPos] = useState(0);
   const [isTimelineDragging, setIsTimelineDragging] = useState(false);
 
-  const [markerFilter, setMarkerFilter] = useState('all');
   const [newCommentText, setNewCommentText] = useState('');
   const [newCommentCategory, setNewCommentCategory] = useState('Visual / VFX');
   const [lockedTimestamp, setLockedTimestamp] = useState(null);
@@ -869,7 +246,6 @@ export default function App() {
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [toast, setToast] = useState(null);
 
-  // MODAL FORMS
   const [newProjectForm, setNewProjectForm] = useState({
     title: '',
     client_name: 'Sepand Studios',
@@ -909,289 +285,7 @@ export default function App() {
     }, 4000);
   }, []);
 
-  // Sync comparison versions when active project changes
-  useEffect(() => {
-    if (activeProject?.versions && activeProject.versions.length >= 2) {
-      setCompareVersionLeftId(activeProject.versions[0].id);
-      setCompareVersionRightId(activeProject.versions[1].id);
-    } else if (activeProject?.versions && activeProject.versions.length === 1) {
-      setCompareVersionLeftId(activeProject.versions[0].id);
-      setCompareVersionRightId(activeProject.versions[0].id);
-    }
-  }, [activeProject?.id, activeProject?.versions]);
-
-  // Sync favicon & document title
-  useEffect(() => {
-    const faviconHref =
-      settings.studioLogo && settings.studioLogo.trim() !== ''
-        ? settings.studioLogo.trim()
-        : DEFAULT_FAVICON_SVG;
-
-    let link = document.querySelector("link[rel~='icon']");
-    if (!link) {
-      link = document.createElement('link');
-      link.rel = 'icon';
-      document.head.appendChild(link);
-    }
-    link.href = faviconHref;
-
-    let appleLink = document.querySelector("link[rel='apple-touch-icon']");
-    if (!appleLink) {
-      appleLink = document.createElement('link');
-      appleLink.rel = 'apple-touch-icon';
-      document.head.appendChild(appleLink);
-    }
-    appleLink.href = faviconHref;
-
-    const studioTitle = settings.studioName || 'DeepDox';
-    const projTitle = activeProject?.title ? ` — ${activeProject.title}` : '';
-    document.title = `${studioTitle}${projTitle}`;
-  }, [settings.studioLogo, settings.studioName, activeProject?.title]);
-
-  // AUTO-SAVE TO LOCALSTORAGE ON EVERY STATE CHANGE
-  useEffect(() => {
-    try {
-      localStorage.setItem('deepdox_projects_v7', JSON.stringify(projects));
-      localStorage.setItem('deepdox_markers_v7', JSON.stringify(markers));
-      localStorage.setItem('deepdox_settings_v7', JSON.stringify(settings));
-      if (!isStrictClientBookmark) {
-        localStorage.setItem('deepdox_role_v7', role);
-      }
-    } catch (e) {
-      console.error('Failed to save state to localStorage:', e);
-    }
-  }, [projects, markers, settings, role, isStrictClientBookmark]);
-
-  // =========================================================================
-  // SUPABASE TWO-WAY LIVE CLOUD SYNC (EDITOR <-> CLIENT ACROSS ALL DEVICES)
-  // =========================================================================
-  const [syncStatus, setSyncStatus] = useState('connecting'); // 'connecting' | 'live' | 'syncing' | 'error'
-  const lastSyncTimestampRef = useRef(getStoredSyncTime());
-  const isApplyingRemoteRef = useRef(false);
-  const hasLoadedInitialCloudRef = useRef(false);
-
-  const projectsRef = useRef(projects);
-  const markersRef = useRef(markers);
-  const settingsRef = useRef(settings);
-  useEffect(() => {
-    projectsRef.current = projects;
-    markersRef.current = markers;
-    settingsRef.current = settings;
-  }, [projects, markers, settings]);
-
-  const supabaseHeaders = useMemo(
-    () => ({
-      apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${SUPABASE_KEY}`,
-      'Content-Type': 'application/json'
-    }),
-    []
-  );
-
-  // 1. Push Local State to Supabase
-  const pushToSupabase = useCallback(
-    async (nextProjects, nextMarkers, nextSettings, customTimestamp = null, force = false) => {
-      if (isApplyingRemoteRef.current && !force) return;
-
-      const now = customTimestamp || Date.now();
-      lastSyncTimestampRef.current = Math.max(lastSyncTimestampRef.current, now);
-      setStoredSyncTime(lastSyncTimestampRef.current);
-      setSyncStatus('syncing');
-
-      try {
-        const res = await fetch(`${SUPABASE_ENDPOINT}?on_conflict=id`, {
-          method: 'POST',
-          headers: {
-            ...supabaseHeaders,
-            Prefer: 'resolution=merge-duplicates,return=minimal'
-          },
-          body: JSON.stringify({
-            id: PORTAL_STATE_ID,
-            updated_at: now,
-            projects: nextProjects,
-            markers: nextMarkers,
-            settings: nextSettings
-          })
-        });
-
-        if (res.ok) {
-          setSyncStatus('live');
-        } else {
-          console.warn('Supabase push status:', res.status);
-          setSyncStatus('error');
-        }
-      } catch (err) {
-        console.warn('Supabase push failed:', err);
-        setSyncStatus('error');
-      }
-    },
-    [supabaseHeaders]
-  );
-
-  // 2. Pull Remote State from Supabase (On Load + Every 3 Seconds)
-  useEffect(() => {
-    let isMounted = true;
-
-    const pullFromSupabase = async () => {
-      try {
-        const res = await fetch(
-          `${SUPABASE_ENDPOINT}?id=eq.${PORTAL_STATE_ID}&select=*`,
-          {
-            method: 'GET',
-            headers: supabaseHeaders
-          }
-        );
-
-        if (!res.ok) {
-          if (isMounted) setSyncStatus('error');
-          return;
-        }
-
-        const rows = await res.json();
-        if (!isMounted) return;
-
-        // If table is empty on first run, seed Supabase with current local data
-        if (!Array.isArray(rows) || rows.length === 0) {
-          hasLoadedInitialCloudRef.current = true;
-          const now = Date.now();
-          lastSyncTimestampRef.current = now;
-          setStoredSyncTime(now);
-          await pushToSupabase(projectsRef.current, markersRef.current, settingsRef.current, now, true);
-          return;
-        }
-
-        const remote = rows[0];
-        hasLoadedInitialCloudRef.current = true;
-
-        const localTime = Math.max(lastSyncTimestampRef.current, getStoredSyncTime());
-
-        // Apply remote state if it is newer than our local version
-        if (remote.updated_at && remote.updated_at > localTime) {
-          isApplyingRemoteRef.current = true;
-          lastSyncTimestampRef.current = remote.updated_at;
-          setStoredSyncTime(remote.updated_at);
-
-          if (Array.isArray(remote.projects) && remote.projects.length > 0) {
-            // Intelligent Merge: Never let remote demo video overwrite a valid local user video
-            const currentLocals = projectsRef.current || [];
-            const mergedProjects = remote.projects.map((remProj, idx) => {
-              const localProj = currentLocals.find((lp) => lp.id === remProj.id);
-              if (!localProj) return normalizeProject(remProj, idx);
-
-              const keepLocalR2 = !isFallbackDemo(localProj.r2Url) && isFallbackDemo(remProj.r2Url);
-              const keepLocalVideo = !isFallbackDemo(localProj.video_url) && isFallbackDemo(remProj.video_url);
-
-              const mergedVersions = (remProj.versions || []).map((remVer) => {
-                const localVer = localProj.versions?.find((lv) => lv.id === remVer.id);
-                if (!localVer) return remVer;
-                const keepVerR2 = !isFallbackDemo(localVer.r2Url) && isFallbackDemo(remVer.r2Url);
-                return {
-                  ...remVer,
-                  r2Url: keepVerR2 ? localVer.r2Url : remVer.r2Url,
-                  video_url: keepVerR2 ? localVer.r2Url : remVer.video_url
-                };
-              });
-
-              return normalizeProject(
-                {
-                  ...remProj,
-                  r2Url: keepLocalR2 ? localProj.r2Url : remProj.r2Url,
-                  video_url: keepLocalVideo ? localProj.video_url : remProj.video_url,
-                  versions: mergedVersions
-                },
-                idx
-              );
-            });
-
-            setProjects(mergedProjects);
-            saveProjectsToStorage(mergedProjects);
-          }
-
-          if (Array.isArray(remote.markers)) {
-            setMarkers(remote.markers);
-            localStorage.setItem('deepdox_markers_v7', JSON.stringify(remote.markers));
-          }
-
-          if (remote.settings && Object.keys(remote.settings).length > 0) {
-            setSettings((prev) => ({ ...prev, ...remote.settings }));
-          }
-
-          setTimeout(() => {
-            isApplyingRemoteRef.current = false;
-          }, 350);
-        } else if (localTime > (remote.updated_at || 0)) {
-          // Local state is newer than Supabase -> synchronize cloud so other devices receive it
-          await pushToSupabase(projectsRef.current, markersRef.current, settingsRef.current, localTime, true);
-        }
-
-        setSyncStatus('live');
-      } catch (err) {
-        if (isMounted) setSyncStatus('error');
-      }
-    };
-
-    pullFromSupabase();
-    const intervalId = setInterval(pullFromSupabase, 3000);
-
-    return () => {
-      isMounted = false;
-      clearInterval(intervalId);
-    };
-  }, [supabaseHeaders, pushToSupabase]);
-
-  // 3. Auto-Trigger Push Whenever Projects, Markers, or Settings Change Locally
-  useEffect(() => {
-    if (isApplyingRemoteRef.current || !hasLoadedInitialCloudRef.current) return;
-
-    const debounceTimer = setTimeout(() => {
-      pushToSupabase(projects, markers, settings);
-    }, 450);
-
-    return () => clearTimeout(debounceTimer);
-  }, [projects, markers, settings, pushToSupabase]);
-
-  // PROJECT STATS & MARKER FILTERING
-  const getProjectStats = useCallback(
-    (projectId) => {
-      const list = markers.filter((m) => m.project_id === projectId);
-      const total = list.length;
-      const resolved = list.filter((m) => m.is_resolved).length;
-      const pending = total - resolved;
-      const percent = total === 0 ? 0 : Math.round((resolved / total) * 100);
-      const isComplete = total > 0 && resolved === total;
-      return { total, resolved, pending, percent, isComplete };
-    },
-    [markers]
-  );
-
-  const activeStats = useMemo(
-    () => getProjectStats(activeProject?.id),
-    [getProjectStats, activeProject?.id]
-  );
-
-  const projectMarkers = useMemo(() => {
-    if (!activeProject) return [];
-    return markers
-      .filter((m) => m.project_id === activeProject.id)
-      .sort((a, b) => Number(a.timestamp_seconds) - Number(b.timestamp_seconds));
-  }, [markers, activeProject]);
-
-  // POINT 5: VERSION-SPECIFIC TIMESTAMP COMMENTS & FEEDBACK FILTERING
-  const filteredMarkers = useMemo(() => {
-    let list = projectMarkers;
-    if (selectedVersionFilter !== 'all') {
-      list = list.filter((m) => {
-        if (!m.version_id) {
-          return selectedVersionFilter === activeProject?.versions?.[0]?.id;
-        }
-        return m.version_id === selectedVersionFilter;
-      });
-    }
-    if (markerFilter === 'pending') list = list.filter((m) => !m.is_resolved);
-    if (markerFilter === 'resolved') list = list.filter((m) => m.is_resolved);
-    return list;
-  }, [projectMarkers, selectedVersionFilter, markerFilter, activeProject?.versions]);
-
+  // Hydrate sourceUpdateForm with active project
   const syncUploadModalWithActiveProject = useCallback(() => {
     if (!activeProject) return;
     setSourceUpdateForm({
@@ -1199,14 +293,8 @@ export default function App() {
       client_name: activeProject.client_name || 'Sepand Studios',
       status_label: activeProject.status_label || 'Status: In Revision / Fixing Notes',
       source_type: activeVersion?.source_type || activeProject.source_type || 'r2',
-      r2Url:
-        activeVersion?.r2Url ||
-        activeProject.r2Url ||
-        DEMO_FALLBACK_MP4,
-      driveUrl:
-        activeVersion?.driveUrl ||
-        activeProject.driveUrl ||
-        'https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view',
+      r2Url: activeVersion?.r2Url || activeProject.r2Url || DEMO_FALLBACK_MP4,
+      driveUrl: activeVersion?.driveUrl || activeProject.driveUrl || 'https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view',
       youtubeUrl: activeVersion?.youtubeUrl || activeProject.youtubeUrl || '',
       version_label: activeVersion?.version_label || activeProject.version_label || 'Version 1.0',
       client_email: activeProject.client_email || '',
@@ -1215,400 +303,127 @@ export default function App() {
   }, [activeProject, activeVersion]);
 
   useEffect(() => {
-    setVideoError(false);
-    setCurrentTime(0);
-    setDuration(0);
-    setIsPlaying(false);
-    setLockedTimestamp(null);
-    setIsEditingTimecode(false);
-    setSelectedVersionFilter('all');
-    setIsDrawingMode(false);
-    setHasDrawnOnCanvas(false);
-    if (canvasRef.current) {
-      const ctx = canvasRef.current.getContext('2d');
-      if (ctx) ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-    }
-    setEditingTitle(false);
-    setEditingVersion(false);
-    setEditingDeadline(false);
-    setEditingReplyId(null);
-    setNewCommentAttachment(null);
-    setNewCommentAttachmentName(null);
     syncUploadModalWithActiveProject();
-  }, [activeProject?.id, activeVersion?.id, syncUploadModalWithActiveProject]);
+  }, [syncUploadModalWithActiveProject]);
 
-  // PROJECT SELECTION & VIEW SWITCHING ROUTER
+  // Project stats & markers
+  const activeStats = useMemo(() => appState.getProjectStats(activeProject?.id), [markers, activeProject?.id]);
+  const projectMarkers = useMemo(() => appState.getProjectMarkers(activeProject?.id), [markers, activeProject?.id]);
+
+  // Version-Isolated markers: strictly shows notes for the selected/active version (or all if filter is 'all')
+  const filteredMarkers = useMemo(() => {
+    let list = projectMarkers;
+    const targetVer = selectedVersionFilter !== 'all' ? selectedVersionFilter : activeVersion?.id;
+    if (selectedVersionFilter !== 'all') {
+      list = list.filter((m) => {
+        if (!m.version_id) return targetVer === activeProject?.versions?.[0]?.id;
+        return m.version_id === targetVer;
+      });
+    }
+    if (markerFilter === 'pending') list = list.filter((m) => !m.is_resolved);
+    if (markerFilter === 'resolved') list = list.filter((m) => m.is_resolved);
+    return list;
+  }, [projectMarkers, selectedVersionFilter, markerFilter, activeVersion?.id, activeProject?.versions]);
+
+  // Setters for compatibility
+  const setCurrentView = (v) => { appState.currentView = v; appState.notify(); };
+  const setRole = (r) => { appState.role = r; appState.notify(); };
+  const setThemeMode = (t) => { appState.themeMode = t; appState.notify(); };
+  const setSelectedVersionFilter = (f) => { appState.selectedVersionFilter = f; appState.notify(); };
+  const setIsComparisonMode = (c) => { appState.isComparisonMode = c; appState.notify(); };
+  const setCompareVersionLeftId = (id) => { appState.compareVersionLeftId = id; appState.notify(); };
+  const setCompareVersionRightId = (id) => { appState.compareVersionRightId = id; appState.notify(); };
+  const setComparisonAudioTrack = (t) => { appState.comparisonAudioTrack = t; appState.notify(); };
+  const setCurrentTime = (t) => { appState.currentTime = t; appState.notify(); };
+  const setDuration = (d) => { appState.duration = d; appState.notify(); };
+  const setIsPlaying = (p) => { appState.isPlaying = p; appState.notify(); };
+  const setVideoError = (e) => { appState.videoError = e; appState.notify(); };
+  const setProjects = (updater) => {
+    if (typeof updater === 'function') {
+      appState.projects = updater(appState.projects);
+    } else {
+      appState.projects = updater;
+    }
+    appState.notify();
+  };
+  const setMarkers = (updater) => {
+    if (typeof updater === 'function') {
+      appState.markers = updater(appState.markers);
+    } else {
+      appState.markers = updater;
+    }
+    appState.notify();
+  };
+  const setSettings = (updater) => {
+    if (typeof updater === 'function') {
+      appState.settings = updater(appState.settings);
+    } else {
+      appState.settings = updater;
+    }
+    appState.notify();
+  };
+  const setActiveProjectId = (id) => {
+    appState.selectProject(id);
+  };
+
+  // PROJECT SELECTION
   const handleSelectProject = useCallback((projectId, targetView = 'review', versionId = null) => {
     if (!projectId) return;
-
-    setActiveProjectId(projectId);
-    if (versionId) {
-      setProjects((prev) =>
-        prev.map((p) => {
-          if (p.id !== projectId) return p;
-          const targetVer = (p.versions || []).find((v) => v.id === versionId);
-          return {
-            ...p,
-            active_version_id: versionId,
-            version_label: targetVer?.version_label || p.version_label
-          };
-        })
-      );
-    }
-    if (targetView) {
-      setCurrentView(targetView);
-    }
-
-    try {
-      const url = new URL(window.location.href);
-      url.searchParams.set('project', projectId);
-      if (targetView) {
-        url.searchParams.set('view', targetView);
-      }
-      window.history.pushState({ projectId, view: targetView }, '', url.toString());
-    } catch {
-      // In case history API is restricted
-    }
-
-    const targetProj = projects.find((p) => p.id === projectId);
+    appState.selectProject(projectId, versionId, targetView);
+    const targetProj = appState.projects.find((p) => p.id === projectId);
     if (targetProj) {
-      const label = targetProj.tab_label || 'Video';
-      showToast(`Opened ${label}: ${targetProj.title}`);
+      showToast(`Opened ${targetProj.tab_label || 'Video'}: ${targetProj.title}`);
     }
-
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [projects, showToast]);
+  }, [showToast]);
 
-  // BROWSER BACK / FORWARD NAVIGATION ROUTER LISTENER
-  useEffect(() => {
-    const handlePopState = () => {
-      const p = new URLSearchParams(window.location.search);
-      const viewParam = p.get('view');
-      const projParam = p.get('project');
+  // VERSION SWITCHING (Clean video swap, isolates notes, no loop glitches)
+  const handleSwitchActiveVersion = useCallback((verId) => {
+    appState.selectVersion(verId);
+    showToast(`Switched active video version`);
+  }, [showToast]);
 
-      if (viewParam === 'landing') {
-        setCurrentView('landing');
-      } else if (viewParam === 'review' || projParam || isStrictClientBookmark) {
-        setCurrentView('review');
-      }
-
-      if (projParam && projects.some((pr) => pr.id === projParam)) {
-        setActiveProjectId(projParam);
-      }
-    };
-
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, [projects, isStrictClientBookmark]);
-
-  // POINT 1: INLINE PROJECT EDITING ACTIONS
-  const handleSaveInlineTitle = () => {
-    if (!titleDraft.trim()) return;
-    const updated = projects.map((p) =>
-      p.id === activeProject.id ? { ...p, title: titleDraft.trim() } : p
-    );
-    const normalized = updated.map(normalizeProject);
-    setProjects(normalized);
-    saveProjectsToStorage(normalized);
-    const now = Date.now();
-    lastSyncTimestampRef.current = now;
-    setStoredSyncTime(now);
-    pushToSupabase(normalized, markersRef.current, settingsRef.current, now, true);
-    setEditingTitle(false);
-    showToast(`Updated project title to "${titleDraft.trim()}"`);
-  };
-
-  const handleSaveInlineVersion = () => {
-    if (!versionDraft.trim()) return;
-    const updated = projects.map((p) => {
-      if (p.id !== activeProject?.id) return p;
-      const updatedVersions = (p.versions || []).map((v) =>
-        v.id === p.active_version_id ? { ...v, version_label: versionDraft.trim() } : v
-      );
-      return {
-        ...p,
-        version_label: versionDraft.trim(),
-        versions: updatedVersions
-      };
-    });
-    const normalized = updated.map(normalizeProject);
-    setProjects(normalized);
-    saveProjectsToStorage(normalized);
-    const now = Date.now();
-    lastSyncTimestampRef.current = now;
-    setStoredSyncTime(now);
-    pushToSupabase(normalized, markersRef.current, settingsRef.current, now, true);
-    setEditingVersion(false);
-    showToast(`Updated active video label to "${versionDraft.trim()}"`);
-  };
-
-  const handleUpdateDeadline = (newDate) => {
-    const updated = projects.map((p) =>
-      p.id === activeProject.id ? { ...p, deadline: newDate } : p
-    );
-    const normalized = updated.map(normalizeProject);
-    setProjects(normalized);
-    saveProjectsToStorage(normalized);
-    const now = Date.now();
-    lastSyncTimestampRef.current = now;
-    setStoredSyncTime(now);
-    pushToSupabase(normalized, markersRef.current, settingsRef.current, now, true);
-    setEditingDeadline(false);
-    showToast(`Deadline updated to ${formatDeadlineDisplay(newDate)}`);
-  };
-
-  // POINT 4: VERSION MANAGEMENT & SOURCE ENGINE ACTIONS
-  const handleSwitchActiveVersion = (verId) => {
-    const targetVer = activeProject?.versions?.find((v) => v.id === verId);
-    if (!targetVer) return;
-    const targetUrl =
-      targetVer.source_type === 'youtube'
-        ? targetVer.youtubeUrl
-        : targetVer.source_type === 'gdrive'
-        ? targetVer.driveUrl
-        : targetVer.r2Url || DEMO_FALLBACK_MP4;
-
-    const updated = projects.map((p) =>
-      p.id === activeProject.id
-        ? {
-            ...p,
-            active_version_id: verId,
-            version_label: targetVer.version_label,
-            source_type: targetVer.source_type || 'r2',
-            r2Url: targetVer.r2Url || p.r2Url,
-            driveUrl: targetVer.driveUrl || p.driveUrl,
-            youtubeUrl: targetVer.youtubeUrl || p.youtubeUrl,
-            video_url: targetUrl
-          }
-        : p
-    );
-    const normalized = updated.map(normalizeProject);
-    setProjects(normalized);
-    saveProjectsToStorage(normalized);
-    const now = Date.now();
-    lastSyncTimestampRef.current = now;
-    setStoredSyncTime(now);
-    pushToSupabase(normalized, markersRef.current, settingsRef.current, now, true);
-
-    setSelectedVersionFilter(verId);
-    setCurrentTime(0);
-    setIsPlaying(false);
-    setVideoError(false);
-    showToast(`Switched active video to ${targetVer.version_label}`);
-  };
-
-  const handleSwitchSourceView = (sourceMode) => {
-    if (!activeProject) return;
-    const currentVerId = activeVersion?.id || activeProject.active_version_id;
-    const updated = projects.map((p) => {
-      if (p.id !== activeProject.id) return p;
-      const updatedVersions = (p.versions || []).map((v) => {
-        if (v.id !== currentVerId) return v;
-        let r2Url = v.r2Url;
-        let driveUrl = v.driveUrl;
-        let youtubeUrl = v.youtubeUrl;
-        if (sourceMode === 'r2' && !r2Url) {
-          r2Url = p.r2Url || DEMO_FALLBACK_MP4;
-        }
-        if (sourceMode === 'gdrive' && !driveUrl) {
-          driveUrl = p.driveUrl || 'https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view';
-        }
-        if (sourceMode === 'youtube' && !youtubeUrl) {
-          youtubeUrl = p.youtubeUrl || 'https://www.youtube.com/watch?v=aqz-KE-bpKQ';
-        }
-        return {
-          ...v,
-          source_type: sourceMode,
-          r2Url,
-          driveUrl,
-          youtubeUrl
-        };
-      });
-
-      const activeVerItem = updatedVersions.find((v) => v.id === currentVerId);
-      const chosenUrl =
-        sourceMode === 'youtube'
-          ? activeVerItem?.youtubeUrl
-          : sourceMode === 'gdrive'
-          ? activeVerItem?.driveUrl
-          : activeVerItem?.r2Url;
-
-      return {
-        ...p,
-        source_type: sourceMode,
-        video_url: chosenUrl || p.video_url,
-        versions: updatedVersions
-      };
-    });
-
-    const normalized = updated.map(normalizeProject);
-    setProjects(normalized);
-    saveProjectsToStorage(normalized);
-    const now = Date.now();
-    lastSyncTimestampRef.current = now;
-    setStoredSyncTime(now);
-    pushToSupabase(normalized, markersRef.current, settingsRef.current, now, true);
-
+  // SOURCE PLATFORM SWITCHING (r2, gdrive, youtube)
+  const handleSwitchSourceView = useCallback((sourceMode) => {
+    appState.switchSourcePlatform(sourceMode);
     const modeNames = {
-      r2: 'Cloudflare View (Direct MP4 Stream)',
-      gdrive: 'Drive View (Google Preview)',
+      r2: 'Cloudflare View (Direct Stream)',
+      gdrive: 'Google Drive View (Preview Player)',
       youtube: 'YouTube View (Embed Player)'
     };
     showToast(`Switched to ${modeNames[sourceMode] || sourceMode}`);
-  };
+  }, [showToast]);
 
-  const handleAddNewVersion = (e) => {
+  // ADD NEW VERSION
+  const handleAddNewVersion = useCallback((e) => {
     e.preventDefault();
-    const nextVerIndex = (activeProject?.versions?.length || 0) + 1;
-    const resolvedLabel = newVideoName.trim() || `Version ${nextVerIndex}`;
-    const { url: cleanUrl, detectedType } = cleanAndEnhanceVideoUrl(newVideoUrl.trim());
-    const finalType = detectedType || newVideoSourceType;
-
-    const createdVer = {
-      id: `ver_${Date.now()}`,
-      version_label: resolvedLabel,
-      source_type: finalType,
-      r2Url: finalType === 'r2' ? cleanUrl || DEMO_FALLBACK_MP4 : '',
-      driveUrl: finalType === 'gdrive' ? cleanUrl : '',
-      youtubeUrl: finalType === 'youtube' ? cleanUrl : '',
-      created_at: new Date().toISOString()
-    };
-
-    const chosenUrl =
-      finalType === 'youtube'
-        ? createdVer.youtubeUrl
-        : finalType === 'gdrive'
-        ? createdVer.driveUrl
-        : createdVer.r2Url;
-
-    const updated = projects.map((p) =>
-      p.id === activeProject.id
-        ? {
-            ...p,
-            versions: [...(p.versions || []), createdVer],
-            active_version_id: createdVer.id,
-            version_label: createdVer.version_label,
-            source_type: createdVer.source_type,
-            r2Url: createdVer.r2Url || p.r2Url,
-            driveUrl: createdVer.driveUrl || p.driveUrl,
-            youtubeUrl: createdVer.youtubeUrl || p.youtubeUrl,
-            video_url: chosenUrl || p.video_url
-          }
-        : p
-    );
-
-    const normalized = updated.map(normalizeProject);
-    setProjects(normalized);
-    saveProjectsToStorage(normalized);
-    setNewVideoName('');
-    setNewVideoUrl('');
-    setShowUploadSourceModal(false);
-    setSelectedVersionFilter(createdVer.id);
-    setVideoError(false);
-    setCurrentTime(0);
-
-    const now = Date.now();
-    lastSyncTimestampRef.current = now;
-    setStoredSyncTime(now);
-    pushToSupabase(normalized, markersRef.current, settingsRef.current, now, true);
-
-    showToast(`Added new video: ${createdVer.version_label} (Saved & Synced)`);
-  };
-
-  const handleDeleteVersion = (verId) => {
-    if (!activeProject?.versions || activeProject.versions.length <= 1) {
-      const shouldClear = window.confirm(
-        'This is the only video version. Do you want to clear/reset its video link so you can paste a new one?'
-      );
-      if (!shouldClear) return;
-
-      const updated = projects.map((p) => {
-        if (p.id !== activeProject.id) return p;
-        const updatedVersions = (p.versions || []).map((v) => ({
-          ...v,
-          r2Url: DEMO_FALLBACK_MP4,
-          driveUrl: '',
-          youtubeUrl: ''
-        }));
-        return {
-          ...p,
-          r2Url: DEMO_FALLBACK_MP4,
-          driveUrl: '',
-          youtubeUrl: '',
-          video_url: DEMO_FALLBACK_MP4,
-          versions: updatedVersions
-        };
-      });
-
-      const normalized = updated.map(normalizeProject);
-      setProjects(normalized);
-      saveProjectsToStorage(normalized);
-      const now = Date.now();
-      lastSyncTimestampRef.current = now;
-      setStoredSyncTime(now);
-      pushToSupabase(normalized, markersRef.current, settingsRef.current, now, true);
-      showToast('Video link cleared for this version');
-      return;
+    const createdVer = appState.addVersion(activeProject?.id, {
+      version_label: newVideoName,
+      source_type: newVideoSourceType,
+      url: newVideoUrl
+    });
+    if (createdVer) {
+      setNewVideoName('');
+      setNewVideoUrl('');
+      setShowUploadSourceModal(false);
+      showToast(`Added new video: ${createdVer.version_label} (Saved & Synced)`);
     }
+  }, [activeProject?.id, newVideoName, newVideoSourceType, newVideoUrl, showToast]);
 
-    const versionToDelete = activeProject.versions.find((v) => v.id === verId);
-    const remaining = activeProject.versions.filter((v) => v.id !== verId);
-    const newActiveId =
-      activeProject.active_version_id === verId ? remaining[remaining.length - 1].id : activeProject.active_version_id;
-    const targetVer = remaining.find((v) => v.id === newActiveId);
-    const targetUrl =
-      targetVer?.source_type === 'youtube'
-        ? targetVer?.youtubeUrl
-        : targetVer?.source_type === 'gdrive'
-        ? targetVer?.driveUrl
-        : targetVer?.r2Url || DEMO_FALLBACK_MP4;
+  // DELETE VERSION
+  const handleDeleteVersion = useCallback((verId) => {
+    appState.deleteVersion(activeProject?.id, verId);
+    showToast('Video version updated (Synced)');
+  }, [activeProject?.id, showToast]);
 
-    const updated = projects.map((p) =>
-      p.id === activeProject.id
-        ? {
-            ...p,
-            versions: remaining,
-            active_version_id: newActiveId,
-            version_label: targetVer?.version_label || p.version_label,
-            source_type: targetVer?.source_type || 'r2',
-            r2Url: targetVer?.r2Url || p.r2Url,
-            driveUrl: targetVer?.driveUrl || p.driveUrl,
-            youtubeUrl: targetVer?.youtubeUrl || p.youtubeUrl,
-            video_url: targetUrl
-          }
-        : p
-    );
-
-    const normalized = updated.map(normalizeProject);
-    setProjects(normalized);
-    saveProjectsToStorage(normalized);
-
-    // Clean up markers specific to the deleted version
-    const updatedMarkers = markers.filter((m) => m.version_id !== verId);
-    setMarkers(updatedMarkers);
-    localStorage.setItem('deepdox_markers_v7', JSON.stringify(updatedMarkers));
-
-    if (selectedVersionFilter === verId) {
-      setSelectedVersionFilter('all');
-    }
-
-    const now = Date.now();
-    lastSyncTimestampRef.current = now;
-    setStoredSyncTime(now);
-    pushToSupabase(normalized, updatedMarkers, settingsRef.current, now, true);
-
-    showToast(`Deleted video "${versionToDelete?.version_label || 'version'}" (Synced)`);
-  };
-
-  const handleQuickSaveVideoLink = (url, sourceType = 'r2') => {
+  // QUICK SAVE VIDEO LINK
+  const handleQuickSaveVideoLink = useCallback((url, sourceType = 'r2') => {
     const { url: cleanUrl, detectedType } = cleanAndEnhanceVideoUrl(url);
     if (!cleanUrl) return;
-
     const finalType = detectedType || sourceType;
-    const targetVerId = activeVersion?.id || activeProject?.active_version_id || activeProject?.versions?.[0]?.id;
-
-    const updated = projects.map((p) => {
+    appState.projects = appState.projects.map((p) => {
       if (p.id !== activeProject?.id) return p;
+      const targetVerId = activeVersion?.id || p.active_version_id;
       const updatedVersions = (p.versions || []).map((v) => {
         if (v.id === targetVerId) {
           return {
@@ -1621,183 +436,123 @@ export default function App() {
         }
         return v;
       });
-
-      return {
+      return normalizeProject({
         ...p,
         source_type: finalType,
         r2Url: finalType === 'r2' ? cleanUrl : p.r2Url,
         driveUrl: finalType === 'gdrive' ? cleanUrl : p.driveUrl,
         youtubeUrl: finalType === 'youtube' ? cleanUrl : p.youtubeUrl,
         video_url: cleanUrl,
-        active_version_id: targetVerId,
         versions: updatedVersions
-      };
+      });
     });
+    saveProjectsToStorage(appState.projects);
+    appState.selectVersion(activeVersion?.id || activeProject?.active_version_id);
+    appState.pushToCloud(null, true);
+    showToast('Video URL saved, locked, and synced live across all client devices!');
+  }, [activeProject?.id, activeVersion?.id, showToast]);
 
-    const normalized = updated.map(normalizeProject);
-    setProjects(normalized);
-    saveProjectsToStorage(normalized);
-    setVideoError(false);
-    setCurrentTime(0);
-
-    const now = Date.now();
-    lastSyncTimestampRef.current = now;
-    setStoredSyncTime(now);
-
-    // Sync active video to URL parameters so page refreshes never lose the link
-    try {
-      const currentUrl = new URL(window.location.href);
-      currentUrl.searchParams.set('project', activeProject?.id || 'proj_1');
-      currentUrl.searchParams.set('video', cleanUrl);
-      currentUrl.searchParams.set('type', finalType);
-      window.history.replaceState({}, '', currentUrl.toString());
-    } catch {}
-
-    // INSTANT PUSH TO SUPABASE CLOUD (Cross-device sync without debounce delay)
-    pushToSupabase(normalized, markersRef.current, settingsRef.current, now, true);
-
-    showToast(`Video URL saved, locked, and synced live across all client devices!`);
-  };
-
-  // POINT 12: 1-SECOND SKIP PRECISION
-  const skipSeconds = useCallback((delta) => {
-    if (!videoRef.current || isNaN(videoRef.current.duration)) return;
-    const newTime = Math.max(0, Math.min(videoRef.current.duration, videoRef.current.currentTime + delta));
-    videoRef.current.currentTime = newTime;
-    setCurrentTime(newTime);
-    if (compareVideoRef.current && !isNaN(compareVideoRef.current.duration)) {
-      compareVideoRef.current.currentTime = newTime;
+  // CREATE PROJECT
+  const handleCreateProject = useCallback((e) => {
+    e.preventDefault();
+    const created = appState.createProject(newProjectForm);
+    if (created) {
+      setShowNewProjectModal(false);
+      showToast(`Created ${created.tab_label}: ${created.title} (Synced)`);
     }
+  }, [newProjectForm, showToast]);
+
+  // DELETE PROJECT
+  const handleDeleteProject = useCallback((e, targetId) => {
+    e.stopPropagation();
+    const ok = appState.deleteProject(targetId);
+    if (ok) {
+      showToast('Project deleted successfully (Synced).');
+    } else {
+      showToast('Cannot delete the last remaining project workspace.', 'error');
+    }
+  }, [showToast]);
+
+  // INLINE METADATA UPDATES
+  const handleSaveInlineTitle = useCallback(() => {
+    if (!titleDraft.trim() || !activeProject) return;
+    appState.updateProjectMetadata(activeProject.id, { title: titleDraft.trim() });
+    setEditingTitle(false);
+    showToast(`Updated project title to "${titleDraft.trim()}"`);
+  }, [titleDraft, activeProject, showToast]);
+
+  const handleSaveInlineVersion = useCallback(() => {
+    if (!versionDraft.trim() || !activeProject) return;
+    appState.updateProjectMetadata(activeProject.id, { version_label: versionDraft.trim() });
+    setEditingVersion(false);
+    showToast(`Updated active video label to "${versionDraft.trim()}"`);
+  }, [versionDraft, activeProject, showToast]);
+
+  const handleUpdateDeadline = useCallback((newDate) => {
+    if (!activeProject) return;
+    appState.updateProjectMetadata(activeProject.id, { deadline: newDate });
+    setEditingDeadline(false);
+    showToast(`Deadline updated to ${formatDeadlineDisplay(newDate)}`);
+  }, [activeProject, showToast]);
+
+  // PLAYBACK CONTROLS (WITHOUT LOOP GLITCHES)
+  const skipSeconds = useCallback((delta) => {
+    appState.skipSeconds(delta);
     setSkipFeedback(delta > 0 ? `+${delta}s` : `${delta}s`);
     setTimeout(() => setSkipFeedback(null), 500);
   }, []);
 
-  const seekTo = (seconds) => {
-    const targetSec = Math.max(0, Number(seconds) || 0);
-    setCurrentTime(targetSec);
-    if (videoRef.current) {
-      try {
-        videoRef.current.currentTime = targetSec;
-      } catch {}
-    }
-    if (compareVideoRef.current) {
-      try {
-        compareVideoRef.current.currentTime = targetSec;
-      } catch {}
-    }
-  };
+  const seekTo = useCallback((seconds) => {
+    appState.seekTo(seconds);
+  }, []);
 
   const togglePlayPause = useCallback(() => {
-    if (!videoRef.current) return;
-    if (videoRef.current.paused) {
-      videoRef.current.play().catch(() => {});
-      if (compareVideoRef.current) {
-        compareVideoRef.current.play().catch(() => {});
-      }
-      setIsPlaying(true);
-      setSkipFeedback('play');
-    } else {
-      videoRef.current.pause();
-      if (compareVideoRef.current) {
-        compareVideoRef.current.pause();
-      }
-      setIsPlaying(false);
-      setSkipFeedback('pause');
-    }
+    appState.togglePlayPause();
+    setSkipFeedback(appState.isPlaying ? 'play' : 'pause');
     setTimeout(() => setSkipFeedback(null), 500);
   }, []);
 
-  // POINT 11: DEDICATED VOLUME SLIDER CONTROL BAR
-  const handleVolumeChange = (val) => {
-    const clean = Math.max(0, Math.min(1, val));
-    setVolume(clean);
-    setIsMuted(clean === 0);
-    if (videoRef.current) {
-      videoRef.current.volume = clean;
-      videoRef.current.muted = clean === 0;
-    }
-    if (compareVideoRef.current) {
-      if (comparisonAudioTrack === 'right') {
-        compareVideoRef.current.volume = clean;
-        compareVideoRef.current.muted = clean === 0;
-      }
-    }
-  };
+  const handleVolumeChange = useCallback((val) => {
+    appState.setVolume(val);
+  }, []);
 
-  const toggleMute = () => {
-    const nextMute = !isMuted;
-    setIsMuted(nextMute);
-    if (videoRef.current) {
-      videoRef.current.muted = nextMute;
-    }
-    if (compareVideoRef.current) {
-      compareVideoRef.current.muted = nextMute;
-    }
-    showToast(nextMute ? 'Muted audio' : 'Unmuted audio');
-  };
+  const toggleMute = useCallback(() => {
+    appState.toggleMute();
+    showToast(appState.isMuted ? 'Muted audio' : 'Unmuted audio');
+  }, [showToast]);
 
-  const handlePlaybackSpeedChange = (speed) => {
-    setPlaybackSpeed(speed);
-    if (videoRef.current) {
-      videoRef.current.playbackRate = speed;
-    }
-    if (compareVideoRef.current) {
-      compareVideoRef.current.playbackRate = speed;
-    }
+  const handlePlaybackSpeedChange = useCallback((speed) => {
+    appState.setPlaybackSpeed(speed);
     setSkipFeedback(`${speed}x`);
     setTimeout(() => setSkipFeedback(null), 500);
-  };
+  }, []);
 
-  // Keyboard controls with 1s step precision
+  // SINGLE CLEAN POPSTATE LISTENER (NEVER STACKED)
   useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape') {
-        setShowUploadSourceModal(false);
-        setShowNewProjectModal(false);
-        setShowSettingsModal(false);
-        setShowNotifyModal(false);
-        setShowCloudflareGuideModal(false);
-        setLightboxImage(null);
-        setEditingTitle(false);
-        setEditingVersion(false);
-        setEditingDeadline(false);
-        setIsEditingTimecode(false);
-        setIsDrawingMode(false);
-        setEditingReplyId(null);
-        return;
+    const handlePopState = () => {
+      const p = new URLSearchParams(window.location.search);
+      const viewParam = p.get('view');
+      const projParam = p.get('project');
+      const verParam = p.get('version') || p.get('versionId');
+
+      if (viewParam === 'landing') {
+        AppState.currentView = 'landing';
+        AppState.notify();
+      } else if (viewParam === 'review' || projParam || isStrictClientBookmark) {
+        AppState.currentView = 'review';
+        AppState.notify();
       }
 
-      const activeTag = document.activeElement?.tagName?.toLowerCase();
-      if (
-        activeTag === 'input' ||
-        activeTag === 'textarea' ||
-        activeTag === 'select' ||
-        document.activeElement?.isContentEditable
-      ) {
-        return;
-      }
-      if (e.code === 'Space') {
-        e.preventDefault();
-        togglePlayPause();
-      } else if (e.code === 'ArrowLeft' || e.key.toLowerCase() === 'j') {
-        e.preventDefault();
-        skipSeconds(-1);
-      } else if (e.code === 'ArrowRight' || e.key.toLowerCase() === 'l') {
-        e.preventDefault();
-        skipSeconds(1);
-      } else if (e.key.toLowerCase() === 'm') {
-        e.preventDefault();
-        toggleMute();
-      } else if (e.key.toLowerCase() === 'f') {
-        e.preventDefault();
-        toggleFullscreen();
+      if (projParam && AppState.projects.some((pr) => pr.id === projParam)) {
+        AppState.selectProject(projParam, verParam);
       }
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [togglePlayPause, skipSeconds, toggleMute]);
 
-  // Video hover zone tracking
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [isStrictClientBookmark]);
+
+  // Video hover tracking
   const handleVideoMouseMove = (e) => {
     if (videoEngine.mode !== 'r2') return;
     const rect = e.currentTarget.getBoundingClientRect();
@@ -1882,25 +637,80 @@ export default function App() {
     }
   };
 
-  // POINT 10: PAUSED-FRAME CANVAS DRAWING LOGIC
-  const startDrawing = (e) => {
-    if (!isDrawingMode || isPlaying) return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    const clientX = e.clientX || e.touches?.[0]?.clientX;
-    const clientY = e.clientY || e.touches?.[0]?.clientY;
-    if (clientX === undefined || clientY === undefined) return;
+  // SINGLE CLEAN KEYBOARD SHORTCUTS LISTENER (NEVER STACKED)
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setShowUploadSourceModal(false);
+        setShowNewProjectModal(false);
+        setShowSettingsModal(false);
+        setShowNotifyModal(false);
+        setShowCloudflareGuideModal(false);
+        setLightboxImage(null);
+        setEditingTitle(false);
+        setEditingVersion(false);
+        setEditingDeadline(false);
+        setIsEditingTimecode(false);
+        setIsDrawingMode(false);
+        setEditingReplyId(null);
+        return;
+      }
 
-    const x = (clientX - rect.left) * scaleX;
-    const y = (clientY - rect.top) * scaleY;
-    const ctx = canvas.getContext('2d');
+      const activeTag = document.activeElement?.tagName?.toLowerCase();
+      if (
+        activeTag === 'input' ||
+        activeTag === 'textarea' ||
+        activeTag === 'select' ||
+        document.activeElement?.isContentEditable
+      ) {
+        return;
+      }
+
+      if (e.code === 'Space') {
+        e.preventDefault();
+        AppState.togglePlayPause();
+      } else if (e.code === 'ArrowLeft' || e.key.toLowerCase() === 'j') {
+        e.preventDefault();
+        AppState.skipSeconds(-1);
+      } else if (e.code === 'ArrowRight' || e.key.toLowerCase() === 'l') {
+        e.preventDefault();
+        AppState.skipSeconds(1);
+      } else if (e.key.toLowerCase() === 'm') {
+        e.preventDefault();
+        AppState.toggleMute();
+      } else if (e.key.toLowerCase() === 'f') {
+        e.preventDefault();
+        toggleFullscreen();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // CANVAS DRAWING (ON PAUSED FRAMES)
+  const getCanvasCoords = (e) => {
+    if (!canvasRef.current) return { x: 0, y: 0 };
+    const rect = canvasRef.current.getBoundingClientRect();
+    const scaleX = canvasRef.current.width / rect.width;
+    const scaleY = canvasRef.current.height / rect.height;
+    return {
+      x: (e.clientX - rect.left) * scaleX,
+      y: (e.clientY - rect.top) * scaleY
+    };
+  };
+
+  const startDrawing = (e) => {
+    if (!isDrawingMode || !canvasRef.current) return;
+    if (isPlaying) {
+      togglePlayPause();
+    }
+    const { x, y } = getCanvasCoords(e);
+    const ctx = canvasRef.current.getContext('2d');
     ctx.beginPath();
     ctx.moveTo(x, y);
     ctx.strokeStyle = drawColor;
-    ctx.lineWidth = drawLineWidth * scaleX;
+    ctx.lineWidth = drawLineWidth;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     setIsDrawing(true);
@@ -1908,112 +718,79 @@ export default function App() {
   };
 
   const draw = (e) => {
-    if (!isDrawing || !isDrawingMode || isPlaying) return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    const clientX = e.clientX || e.touches?.[0]?.clientX;
-    const clientY = e.clientY || e.touches?.[0]?.clientY;
-    if (clientX === undefined || clientY === undefined) return;
-
-    const x = (clientX - rect.left) * scaleX;
-    const y = (clientY - rect.top) * scaleY;
-    const ctx = canvas.getContext('2d');
+    if (!isDrawing || !canvasRef.current) return;
+    const { x, y } = getCanvasCoords(e);
+    const ctx = canvasRef.current.getContext('2d');
     ctx.lineTo(x, y);
     ctx.stroke();
   };
 
   const stopDrawing = () => {
+    if (!isDrawing || !canvasRef.current) return;
+    const ctx = canvasRef.current.getContext('2d');
+    ctx.closePath();
     setIsDrawing(false);
   };
 
   const clearCanvas = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (!canvasRef.current) return;
+    const ctx = canvasRef.current.getContext('2d');
+    ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
     setHasDrawnOnCanvas(false);
-    showToast('Cleared canvas drawing');
   };
 
-  // POINT 9: ATTACHMENT SELECTION
+  // ATTACHMENT & MARKERS
   const handleAttachmentSelect = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) {
-      showToast('Please select an image file (PNG, JPG, WEBP)', 'error');
+      showToast('Please select a PNG, JPG, or SVG image reference.', 'error');
       return;
     }
     const reader = new FileReader();
-    reader.onload = (evt) => {
-      setNewCommentAttachment(evt.target.result);
+    reader.onload = (loadEvent) => {
+      setNewCommentAttachment(loadEvent.target?.result);
       setNewCommentAttachmentName(file.name);
-      showToast(`Attached image: ${file.name}`);
+      showToast(`Attached image reference: ${file.name}`);
     };
     reader.readAsDataURL(file);
   };
 
-  // Comment input auto-locking
   const handleCommentFocus = () => {
-    if (lockedTimestamp === null && videoEngine.mode === 'r2') {
-      const snap = Number(currentTime.toFixed(1));
-      setLockedTimestamp(snap);
-      setManualTimecodeInput(formatTimecode(snap, false));
+    if (lockedTimestamp === null) {
+      setLockedTimestamp(Number(currentTime.toFixed(1)));
     }
   };
 
   const handleToggleLockTimestamp = () => {
-    if (lockedTimestamp !== null) {
-      setLockedTimestamp(null);
-      setIsEditingTimecode(false);
-      showToast('Timestamp unlocked. Tracks live playhead.');
-    } else {
+    if (lockedTimestamp === null) {
       const snap = Number(currentTime.toFixed(1));
       setLockedTimestamp(snap);
-      setManualTimecodeInput(formatTimecode(snap, false));
-      showToast(`Timestamp locked at ${formatTimecode(snap, false)}`);
+      showToast(`Locked feedback note timestamp to ${formatTimecode(snap)}`);
+    } else {
+      setLockedTimestamp(null);
+      showToast('Unlocked timestamp. Comment will track active playback head.');
     }
   };
 
-  // POSTING NEW FEEDBACK NOTE (WITH DRAWING & ATTACHMENT)
+  // ADD MARKER / FEEDBACK NOTE (VERSION-ISOLATED)
   const handleAddMarker = (e) => {
     e.preventDefault();
-    if (!newCommentText.trim() || !activeProject) return;
+    if (!newCommentText.trim()) return;
 
     let stamp = lockedTimestamp !== null ? lockedTimestamp : Number(currentTime.toFixed(1));
-    if (isEditingTimecode && manualTimecodeInput) {
-      stamp = parseTimecodeToSeconds(manualTimecodeInput);
-    }
-
     let drawingData = null;
     if (hasDrawnOnCanvas && canvasRef.current) {
       drawingData = canvasRef.current.toDataURL('image/png');
     }
 
-    const createdMarker = {
-      id: `m_${Date.now()}`,
-      project_id: activeProject.id,
-      version_id: activeVersion?.id || activeProject.versions?.[0]?.id || 'ver_1',
-      version_label: activeVersion?.version_label || activeProject.version_label || 'Version 1.0',
-      timestamp_seconds: Math.max(0, Number(stamp.toFixed(1))),
+    const createdMarker = appState.addMarker({
+      timestamp: stamp,
       category: newCommentCategory,
-      client_comment: newCommentText.trim(),
-      attachment_url: newCommentAttachment || null,
-      drawing_data: drawingData,
-      is_resolved: false,
-      editor_reply: '',
-      created_at: new Date().toISOString()
-    };
-
-    const updatedMarkers = [...markers, createdMarker];
-    setMarkers(updatedMarkers);
-    localStorage.setItem('deepdox_markers_v7', JSON.stringify(updatedMarkers));
-    const now = Date.now();
-    lastSyncTimestampRef.current = now;
-    setStoredSyncTime(now);
-    pushToSupabase(projectsRef.current, updatedMarkers, settingsRef.current, now, true);
+      comment: newCommentText,
+      attachment_url: newCommentAttachment,
+      drawing_data: drawingData
+    });
 
     setNewCommentText('');
     setNewCommentAttachment(null);
@@ -2025,13 +802,10 @@ export default function App() {
     showToast(`Feedback note posted for ${createdMarker.version_label} at ${formatTimecode(createdMarker.timestamp_seconds)} (Synced)`);
   };
 
-  // Clicking a marker jumps to timecode & renders saved canvas drawing
+  // SEEK TO MARKER
   const handleSeekToMarker = (marker) => {
-    if (marker.version_id && marker.version_id !== activeProject?.active_version_id) {
-      const targetVer = activeProject?.versions?.find((v) => v.id === marker.version_id);
-      if (targetVer) {
-        handleSwitchActiveVersion(marker.version_id);
-      }
+    if (marker.version_id && marker.version_id !== activeVersion?.id) {
+      appState.selectVersion(marker.version_id);
     }
     seekTo(marker.timestamp_seconds);
     if (marker.drawing_data && canvasRef.current) {
@@ -2050,32 +824,8 @@ export default function App() {
   };
 
   const handleToggleResolve = (markerId) => {
-    const target = markers.find((m) => m.id === markerId);
-    if (!target) return;
-    const nextState = !target.is_resolved;
-
-    const updatedMarkers = markers.map((m) =>
-      m.id === markerId ? { ...m, is_resolved: nextState } : m
-    );
-    setMarkers(updatedMarkers);
-    localStorage.setItem('deepdox_markers_v7', JSON.stringify(updatedMarkers));
-
-    const now = Date.now();
-    lastSyncTimestampRef.current = now;
-    setStoredSyncTime(now);
-    pushToSupabase(projectsRef.current, updatedMarkers, settingsRef.current, now, true);
-
-    const projList = updatedMarkers.filter((m) => m.project_id === activeProject?.id);
-    const allResolved = projList.length > 0 && projList.every((m) => m.is_resolved);
-
-    if (nextState && allResolved) {
-      showToast(
-        '100% Complete! Tab turned Green. Click NOTIFY CLIENT to send completion alert.',
-        'milestone'
-      );
-    } else {
-      showToast(nextState ? 'Marked Fixed silently ✓' : 'Re-opened note as Pending');
-    }
+    appState.toggleResolveMarker(markerId);
+    showToast('Updated feedback note status (Synced)');
   };
 
   const handleStartEditorReply = (marker) => {
@@ -2084,48 +834,23 @@ export default function App() {
   };
 
   const handleSaveEditorReply = (markerId) => {
-    const updatedMarkers = markers.map((m) =>
-      m.id === markerId ? { ...m, editor_reply: replyDraftText.trim() } : m
-    );
-    setMarkers(updatedMarkers);
-    localStorage.setItem('deepdox_markers_v7', JSON.stringify(updatedMarkers));
-    const now = Date.now();
-    lastSyncTimestampRef.current = now;
-    setStoredSyncTime(now);
-    pushToSupabase(projectsRef.current, updatedMarkers, settingsRef.current, now, true);
-
+    appState.saveEditorReply(markerId, replyDraftText);
     setEditingReplyId(null);
     setReplyDraftText('');
     showToast('Editor reply saved! (Synced)');
   };
 
   const handleDeleteEditorReply = (markerId) => {
-    const updatedMarkers = markers.map((m) =>
-      m.id === markerId ? { ...m, editor_reply: '' } : m
-    );
-    setMarkers(updatedMarkers);
-    localStorage.setItem('deepdox_markers_v7', JSON.stringify(updatedMarkers));
-    const now = Date.now();
-    lastSyncTimestampRef.current = now;
-    setStoredSyncTime(now);
-    pushToSupabase(projectsRef.current, updatedMarkers, settingsRef.current, now, true);
-
+    appState.deleteEditorReply(markerId);
     showToast('Editor reply cleared (Synced)');
   };
 
   const handleDeleteMarker = (markerId) => {
-    const updatedMarkers = markers.filter((m) => m.id !== markerId);
-    setMarkers(updatedMarkers);
-    localStorage.setItem('deepdox_markers_v7', JSON.stringify(updatedMarkers));
-    const now = Date.now();
-    lastSyncTimestampRef.current = now;
-    setStoredSyncTime(now);
-    pushToSupabase(projectsRef.current, updatedMarkers, settingsRef.current, now, true);
-
+    appState.deleteMarker(markerId);
     showToast('Feedback note removed (Synced)');
   };
 
-  // SWITCHING SOURCE TYPES IN ACTIVE VERSION
+  // UPDATE PROJECT SOURCE & LINK FIELDS
   const handleUpdateProjectSource = (e) => {
     e.preventDefault();
     const { url: cleanR2 } = cleanAndEnhanceVideoUrl(sourceUpdateForm.r2Url.trim());
@@ -2135,8 +860,7 @@ export default function App() {
       activeVersion?.driveUrl ||
       'https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view';
     const cleanYoutube = sourceUpdateForm.youtubeUrl.trim() || activeVersion?.youtubeUrl || '';
-
-    const targetVerId = activeVersion?.id || activeProject?.active_version_id || activeProject?.versions?.[0]?.id;
+    const targetVerId = activeVersion?.id || activeProject?.active_version_id;
 
     const chosenUrl =
       sourceUpdateForm.source_type === 'youtube'
@@ -2145,7 +869,7 @@ export default function App() {
         ? cleanDrive
         : finalR2;
 
-    const updated = projects.map((p) => {
+    appState.projects = appState.projects.map((p) => {
       if (p.id !== activeProject?.id) return p;
       const updatedVersions = (p.versions || []).map((v) => {
         if (v.id === targetVerId) {
@@ -2161,7 +885,7 @@ export default function App() {
         return v;
       });
 
-      return {
+      return normalizeProject({
         ...p,
         title: sourceUpdateForm.title.trim() || p.title,
         client_name: sourceUpdateForm.client_name.trim() || p.client_name,
@@ -2176,28 +900,12 @@ export default function App() {
         client_email: sourceUpdateForm.client_email.trim(),
         client_whatsapp: sourceUpdateForm.client_whatsapp.trim(),
         versions: updatedVersions
-      };
+      });
     });
 
-    const normalized = updated.map(normalizeProject);
-    setProjects(normalized);
-    saveProjectsToStorage(normalized);
-    setVideoError(false);
-
-    const now = Date.now();
-    lastSyncTimestampRef.current = now;
-    setStoredSyncTime(now);
-
-    // Sync active video to URL parameters so page refreshes never lose the link
-    try {
-      const currentUrl = new URL(window.location.href);
-      currentUrl.searchParams.set('project', activeProject?.id || 'proj_1');
-      currentUrl.searchParams.set('video', chosenUrl);
-      currentUrl.searchParams.set('type', sourceUpdateForm.source_type);
-      window.history.replaceState({}, '', currentUrl.toString());
-    } catch {}
-
-    pushToSupabase(normalized, markersRef.current, settingsRef.current, now, true);
+    saveProjectsToStorage(appState.projects);
+    appState.selectVersion(targetVerId, activeProject?.id);
+    appState.pushToCloud(null, true);
 
     setShowUploadSourceModal(false);
     showToast('Updated, saved, and synced project video source & URL!');
@@ -2244,132 +952,29 @@ export default function App() {
     reader.onload = (uploadEvent) => {
       const base64Data = uploadEvent.target?.result;
       if (base64Data) {
-        const nextSettings = { ...settings, studioLogo: base64Data };
-        setSettings(nextSettings);
-        const now = Date.now();
-        lastSyncTimestampRef.current = now;
-        setStoredSyncTime(now);
-        pushToSupabase(projectsRef.current, markersRef.current, nextSettings, now, true);
+        appState.settings = { ...appState.settings, studioLogo: base64Data };
+        saveSettingsToStorage(appState.settings);
+        appState.pushToCloud(null, true);
         showToast('Logo & Browser Tab Favicon updated successfully!');
       }
     };
     reader.readAsDataURL(file);
   };
 
-  const handleCreateProject = (e) => {
-    e.preventDefault();
-    if (!newProjectForm.title.trim()) return;
-
-    const newProjId = `proj_${Date.now()}`;
-    const { url: cleanR2 } = cleanAndEnhanceVideoUrl(newProjectForm.r2Url.trim());
-    const initialVideoVersion = {
-      id: `ver_${Date.now()}_1`,
-      version_label: newProjectForm.version_label.trim() || 'Version 1.0',
-      source_type: newProjectForm.source_type,
-      r2Url:
-        newProjectForm.source_type === 'r2'
-          ? cleanR2 || DEMO_FALLBACK_MP4
-          : '',
-      driveUrl:
-        newProjectForm.source_type === 'gdrive'
-          ? newProjectForm.driveUrl.trim() || 'https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view'
-          : '',
-      youtubeUrl:
-        newProjectForm.source_type === 'youtube'
-          ? newProjectForm.youtubeUrl.trim()
-          : '',
-      created_at: new Date().toISOString()
-    };
-
-    const created = {
-      id: newProjId,
-      tab_number: projects.length + 1,
-      tab_label: `Project ${projects.length + 1}`,
-      title: newProjectForm.title.trim(),
-      client_name: newProjectForm.client_name.trim() || 'Client Workspace',
-      version_label: initialVideoVersion.version_label,
-      active_version_id: initialVideoVersion.id,
-      versions: [initialVideoVersion],
-      status_label: 'Status: Client Review Active',
-      source_type: newProjectForm.source_type,
-      r2Url: initialVideoVersion.r2Url,
-      driveUrl: initialVideoVersion.driveUrl,
-      youtubeUrl: initialVideoVersion.youtubeUrl,
-      video_url:
-        newProjectForm.source_type === 'youtube'
-          ? initialVideoVersion.youtubeUrl
-          : newProjectForm.source_type === 'gdrive'
-          ? initialVideoVersion.driveUrl
-          : initialVideoVersion.r2Url,
-      deadline: newProjectForm.deadline,
-      client_email: newProjectForm.client_email.trim(),
-      client_whatsapp: newProjectForm.client_whatsapp.trim(),
-      created_at: new Date().toISOString()
-    };
-
-    const updated = [...projects, created];
-    const normalized = updated.map(normalizeProject);
-    setProjects(normalized);
-    saveProjectsToStorage(normalized);
-    setActiveProjectId(created.id);
-    setShowNewProjectModal(false);
-
-    const now = Date.now();
-    lastSyncTimestampRef.current = now;
-    setStoredSyncTime(now);
-    pushToSupabase(normalized, markersRef.current, settingsRef.current, now, true);
-
-    showToast(`Created ${created.tab_label}: ${created.title} (Synced)`);
-  };
-
-  const handleDeleteProject = (e, targetId) => {
-    e.stopPropagation();
-    if (projects.length <= 1) {
-      showToast('Cannot delete the last remaining project workspace.', 'error');
-      return;
-    }
-    const remainingProjects = projects.filter((p) => p.id !== targetId);
-    const reindexedProjects = remainingProjects.map((p, idx) => ({
-      ...p,
-      tab_number: idx + 1,
-      tab_label: `Project ${idx + 1}`
-    }));
-
-    if (activeProjectId === targetId) {
-      setActiveProjectId(reindexedProjects[0].id);
-    }
-    const normalized = reindexedProjects.map(normalizeProject);
-    setProjects(normalized);
-    saveProjectsToStorage(normalized);
-
-    const updatedMarkers = markers.filter((m) => m.project_id !== targetId);
-    setMarkers(updatedMarkers);
-    localStorage.setItem('deepdox_markers_v7', JSON.stringify(updatedMarkers));
-
-    const now = Date.now();
-    lastSyncTimestampRef.current = now;
-    setStoredSyncTime(now);
-    pushToSupabase(normalized, updatedMarkers, settingsRef.current, now, true);
-
-    showToast('Project deleted successfully (Synced).');
-  };
-
   const handleResetDemoData = () => {
-    const defaults = INITIAL_PROJECTS.map(normalizeProject);
-    setProjects(defaults);
-    saveProjectsToStorage(defaults);
-    setMarkers(INITIAL_MARKERS);
-    setSettings(DEFAULT_SETTINGS);
-    setActiveProjectId(INITIAL_PROJECTS[0].id);
+    appState.projects = INITIAL_PROJECTS.map(normalizeProject);
+    saveProjectsToStorage(appState.projects);
+    appState.markers = INITIAL_MARKERS.map(normalizeMarker);
+    saveMarkersToStorage(appState.markers);
+    appState.settings = DEFAULT_SETTINGS;
+    saveSettingsToStorage(appState.settings);
+    appState.selectProject(INITIAL_PROJECTS[0].id);
     setShowSettingsModal(false);
-    const now = Date.now();
-    lastSyncTimestampRef.current = now;
-    setStoredSyncTime(now);
-    pushToSupabase(defaults, INITIAL_MARKERS, DEFAULT_SETTINGS, now, true);
+    appState.pushToCloud(null, true);
     showToast('Reset all studio settings & projects to default');
   };
 
-  // Bookmark Review URL Helper (Self-Contained with Video Stream URL attached)
+  // BOOKMARK REVIEW URL HELPER
   const getClientBookmarkLink = () => {
     const base = window.location.origin + window.location.pathname;
     const currentVideo =
@@ -2408,7 +1013,7 @@ export default function App() {
     showToast('Client Bookmark Link copied to clipboard!');
   };
 
-  // Export Notes for DaVinci / Premiere
+  // EXPORT NOTES
   const handleExportNotes = () => {
     if (!projectMarkers.length) {
       showToast('No feedback notes to export.', 'error');
@@ -2499,12 +1104,13 @@ export default function App() {
       });
 
       if (res.ok) {
-        setProjects((prev) =>
-          prev.map((p) =>
-            p.id === activeProject?.id ? { ...p, client_email: notifyForm.clientEmail.trim() } : p
-          )
+        appState.projects = appState.projects.map((p) =>
+          p.id === activeProject?.id ? { ...p, client_email: notifyForm.clientEmail.trim() } : p
         );
-        showToast(`Email update sent to ${notifyForm.clientEmail}!`);
+        saveProjectsToStorage(appState.projects);
+        appState.notify();
+        showToast('Notification email sent successfully via EmailJS!');
+        setShowNotifyModal(false);
       } else {
         openMailClientFallback();
       }
@@ -2527,13 +1133,13 @@ export default function App() {
   const handleSendWhatsAppNotification = () => {
     const cleanedPhone = (notifyForm.clientWhatsapp || '').replace(/[^0-9]/g, '');
     if (notifyForm.clientWhatsapp.trim()) {
-      setProjects((prev) =>
-        prev.map((p) =>
-          p.id === activeProject?.id
-            ? { ...p, client_whatsapp: notifyForm.clientWhatsapp.trim() }
-            : p
-        )
+      appState.projects = appState.projects.map((p) =>
+        p.id === activeProject?.id
+          ? { ...p, client_whatsapp: notifyForm.clientWhatsapp.trim() }
+          : p
       );
+      saveProjectsToStorage(appState.projects);
+      appState.notify();
     }
     const encodedText = encodeURIComponent(notifyForm.customMessage);
     const waUrl = cleanedPhone
@@ -2547,6 +1153,7 @@ export default function App() {
     const v = e.currentTarget;
     if (v.duration && !isNaN(v.duration)) {
       setDuration(v.duration);
+      AppState.duration = v.duration;
     }
     if (v.videoWidth && v.videoHeight) {
       const isVert = v.videoHeight > v.videoWidth;
@@ -2558,7 +1165,6 @@ export default function App() {
     setVideoError(false);
   };
 
-  // POINT 7: SMART DYNAMIC 9:16 VERTICAL VIDEO REFLOWING
   const isVertical = useMemo(() => {
     if (videoAspectRatio === 'vertical') return true;
     if (videoAspectRatio === 'horizontal') return false;
@@ -2570,7 +1176,6 @@ export default function App() {
     return 'aspect-video w-full';
   }, [isVertical]);
 
-  // Comparison Version Resolution
   const compVersionLeft = useMemo(() => {
     return (
       activeProject?.versions?.find((v) => v.id === compareVersionLeftId) ||
@@ -2868,6 +1473,30 @@ export default function App() {
 
             {/* Right: Actions */}
             <div className="flex flex-wrap items-center gap-2">
+              {!isStrictClientBookmark && (
+                <button
+                  type="button"
+                  onClick={copyClientBookmarkLink}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#14182b] hover:bg-[#1a2039] border border-white/10 text-xs font-bold text-slate-200 hover:text-white transition-all"
+                  title="Copy permanent client review bookmark link"
+                >
+                  <Bookmark className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Copy Client Link</span>
+                </button>
+              )}
+
+              {!isStrictClientBookmark && (
+                <button
+                  type="button"
+                  onClick={handleExportNotes}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#14182b] hover:bg-[#1a2039] border border-white/10 text-xs font-bold text-slate-200 hover:text-white transition-all"
+                  title="Export all feedback notes for NLE editing (.txt)"
+                >
+                  <Download className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Export Notes</span>
+                </button>
+              )}
+
               {!isStrictClientBookmark && (
                 <button
                   type="button"
@@ -3623,6 +2252,10 @@ export default function App() {
                           onLoadedMetadata={handleLoadedMetadata}
                           onPlay={() => setIsPlaying(true)}
                           onPause={() => setIsPlaying(false)}
+                          onEnded={() => {
+                            setIsPlaying(false);
+                            AppState.handleVideoEnded();
+                          }}
                         />
                       )}
                     </div>
@@ -3671,6 +2304,10 @@ export default function App() {
                           playsInline
                           muted={isMuted || comparisonAudioTrack === 'left'}
                           className="w-full h-full object-contain"
+                          onEnded={() => {
+                            setIsPlaying(false);
+                            AppState.handleVideoEnded();
+                          }}
                         />
                       )}
                     </div>
@@ -3908,6 +2545,10 @@ export default function App() {
                       }}
                       onPause={() => setIsPlaying(false)}
                       onError={() => setVideoError(true)}
+                      onEnded={() => {
+                        setIsPlaying(false);
+                        AppState.handleVideoEnded();
+                      }}
                     />
 
                     {!isPlaying && !videoError && !isDrawingMode && (
@@ -3997,8 +2638,8 @@ export default function App() {
                     </div>
                   )}
 
-                  {/* Marker Dots */}
-                  {projectMarkers.map((m) => {
+                  {/* Marker Dots (version-specific notes) */}
+                  {currentVersionNotes.map((m) => {
                     const pct = duration > 0 ? (m.timestamp_seconds / duration) * 100 : 0;
                     return (
                       <div
