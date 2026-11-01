@@ -70,6 +70,8 @@ import {
   useAppState,
   DEFAULT_FAVICON_SVG,
   DEFAULT_SETTINGS,
+  INITIAL_PROJECTS,
+  INITIAL_MARKERS,
   MARKER_CATEGORIES,
   DEMO_FALLBACK_MP4,
   formatTimecode,
@@ -138,9 +140,9 @@ export default function App() {
   const comparisonAudioTrack = appState.comparisonAudioTrack;
 
   // Active models & video engine
-  const activeProject = useMemo(() => appState.getActiveProject(), [projects, activeProjectId]);
-  const activeVersion = useMemo(() => appState.getActiveVersion(), [activeProject, activeVersionId]);
-  const videoEngine = useMemo(() => appState.getVideoEngine(), [activeProject, activeVersion]);
+  const activeProject = useMemo(() => appState.getActiveProject() || projects[0] || INITIAL_PROJECTS[0], [projects, activeProjectId]);
+  const activeVersion = useMemo(() => appState.getActiveVersion() || activeProject?.versions?.[0] || null, [activeProject, activeVersionId]);
+  const videoEngine = useMemo(() => appState.getVideoEngine() || resolveVideoEngine(activeProject, activeVersion), [activeProject, activeVersion]);
 
   // Sync Tailwind .dark class on <html> document element for crisp styling
   useEffect(() => {
@@ -307,8 +309,21 @@ export default function App() {
   }, [syncUploadModalWithActiveProject]);
 
   // Project stats & markers
+  const getProjectStats = useCallback((projectId) => appState.getProjectStats(projectId), []);
   const activeStats = useMemo(() => appState.getProjectStats(activeProject?.id), [markers, activeProject?.id]);
   const projectMarkers = useMemo(() => appState.getProjectMarkers(activeProject?.id), [markers, activeProject?.id]);
+
+  // Version-specific notes for timeline dots
+  const currentVersionNotes = useMemo(() => {
+    return (projectMarkers || []).filter((m) => !m.version_id || m.version_id === activeVersion?.id);
+  }, [projectMarkers, activeVersion?.id]);
+
+  // Theme toggle helper
+  const handleToggleTheme = useCallback((mode) => {
+    const next = mode || (themeMode === 'light' ? 'dark' : 'light');
+    setThemeMode(next);
+    showToast(`Switched to ${next === 'dark' ? 'Dark Theme 🌙' : 'Light Theme ☀️'}`);
+  }, [themeMode, showToast]);
 
   // Version-Isolated markers: strictly shows notes for the selected/active version (or all if filter is 'all')
   const filteredMarkers = useMemo(() => {
